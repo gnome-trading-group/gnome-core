@@ -14,17 +14,17 @@ public class LibraryLoader {
      * @param name name of the library to load
      * @throws IOException if the library cannot be extracted from a jar file into a temporary file
      */
-    public static void loadLibrary(String name) throws IOException {
+    public static void loadLibrary(final String name) throws IOException {
         try {
             System.loadLibrary(name);
         } catch (UnsatisfiedLinkError e) {
-            String filename = System.mapLibraryName(name);
-            InputStream in = LibraryLoader.class.getClassLoader().getResourceAsStream(filename);
+            final String filename = System.mapLibraryName(name);
+            final InputStream in = LibraryLoader.class.getClassLoader().getResourceAsStream(filename);
             if (in == null) {
                 throw new MissingResourceException("Cannot get resource native resource: " + filename, LibraryLoader.class.getName(), filename);
             }
-            int pos = filename.lastIndexOf('.');
-            File file = File.createTempFile(filename.substring(0, pos), filename.substring(pos));
+            final int pos = filename.lastIndexOf('.');
+            final File file = File.createTempFile(filename.substring(0, pos), filename.substring(pos));
             Files.copy(in, file.toPath(), StandardCopyOption.REPLACE_EXISTING);
             System.load(file.getAbsolutePath());
         }
