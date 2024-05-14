@@ -31,7 +31,6 @@ public class SingleThreadedObjectPool<T> implements Pool<T> {
 
     private static <T> T newInstance(Class<T> clazz) {
         try {
-            System.out.println(Arrays.toString(clazz.getDeclaredConstructors()));
             return clazz.getDeclaredConstructor().newInstance();
         } catch (Exception e) {
             throw new RuntimeException("Class " + clazz.getSimpleName() + " needs a default constructor for a pool.", e);
