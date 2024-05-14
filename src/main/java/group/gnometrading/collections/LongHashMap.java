@@ -11,7 +11,7 @@ import java.util.HashSet;
  * Single-threaded int map to avoid boxing.
  * @param <T>
  */
-public class IntHashMap<T> implements IntMap<T> {
+public class LongHashMap<T> implements LongMap<T> {
     static final int MAX_CAPACITY = 1 << 30;
     static final float DEFAULT_LOAD_FACTOR = 0.75f;
     static final int DEFAULT_CAPACITY = 1 << 7;
@@ -22,15 +22,15 @@ public class IntHashMap<T> implements IntMap<T> {
     private int count;
     private int loadThreshold;
 
-    public IntHashMap() {
+    public LongHashMap() {
         this(DEFAULT_CAPACITY, DEFAULT_LOAD_FACTOR);
     }
 
-    public IntHashMap(int initialCapacity) {
+    public LongHashMap(int initialCapacity) {
         this(initialCapacity, DEFAULT_LOAD_FACTOR);
     }
 
-    public IntHashMap(int initialCapacity, float loadFactor) {
+    public LongHashMap(int initialCapacity, float loadFactor) {
         this.nodePool = new SingleThreadedObjectPool<Node<T>>(() -> new Node(), 100); // TODO: Good number here for capacity?
 
         int capacity = 1;
@@ -43,7 +43,7 @@ public class IntHashMap<T> implements IntMap<T> {
     }
 
     @Override
-    public T get(final int key) {
+    public T get(final long key) {
         final int hash = hash(key);
         Node<T> node = this.hashTable[hash & (this.hashTable.length - 1)];
         while (node != null) {
@@ -56,7 +56,7 @@ public class IntHashMap<T> implements IntMap<T> {
     }
 
     @Override
-    public T put(final int key, final T value) {
+    public T put(final long key, final T value) {
         final int hash = hash(key);
         if (count == loadThreshold) {
             rehash();
@@ -88,7 +88,7 @@ public class IntHashMap<T> implements IntMap<T> {
     }
 
     @Override
-    public boolean containsKey(final int key) {
+    public boolean containsKey(final long key) {
         return get(key) != null;
     }
 
@@ -103,7 +103,7 @@ public class IntHashMap<T> implements IntMap<T> {
     }
 
     @Override
-    public T remove(final int key) {
+    public T remove(final long key) {
         final int hash = hash(key);
         int idx = hash & (this.hashTable.length - 1);
 
@@ -142,8 +142,8 @@ public class IntHashMap<T> implements IntMap<T> {
     }
 
     @Override
-    public Collection<Integer> keys() {
-        Collection<Integer> keys = new HashSet<>( size() );
+    public Collection<Long> keys() {
+        Collection<Long> keys = new HashSet<>( size() );
         for (var node : this.hashTable) {
             while (node != null) {
                 keys.add(node.key);
@@ -193,12 +193,12 @@ public class IntHashMap<T> implements IntMap<T> {
         setTable(newTable);
     }
 
-    private static int hash(int n) {
-        return n; // hopefully compiled away
+    private static int hash(final long key) {
+        return (int) (key ^ (key >>> 32));
     }
 
     private static class Node<T> {
-        int key = -1;
+        long key = -1;
         T value = null;
         Node<T> next = null;
         PoolNode<Node<T>> self = null;
