@@ -1,5 +1,7 @@
 package group.gnometrading.pools;
 
+import group.gnometrading.annotations.VisibleForTesting;
+
 import java.util.function.Supplier;
 
 public class SingleThreadedObjectPool<T> implements Pool<T> {
@@ -7,6 +9,7 @@ public class SingleThreadedObjectPool<T> implements Pool<T> {
     private static final int DEFAULT_CAPACITY = 50;
 
     private final PoolNodeImpl<T> freeNodes = new PoolNodeImpl<>();
+    private final PoolNodeImpl<T> usedNodes = new PoolNodeImpl<>();
     private int additionalNodes = 0;
     private final Supplier<T> supplier;
 
@@ -18,13 +21,18 @@ public class SingleThreadedObjectPool<T> implements Pool<T> {
         this(() -> newInstance(clazz), defaultCapacity);
     }
 
+    public SingleThreadedObjectPool(final Supplier<T> supplier) {
+        this(supplier, DEFAULT_CAPACITY);
+    }
+
     public SingleThreadedObjectPool(final Supplier<T> supplier, final int defaultCapacity) {
         this.supplier = supplier;
         PoolNodeImpl<T> current = freeNodes;
         for (int i = 0; i < defaultCapacity; i++) {
-            current.next = new PoolNodeImpl<>();
-            current.next.item = this.supplier.get();
-            current = current.next;
+            final var node = new PoolNodeImpl<T>();
+            node.item = this.supplier.get();
+            node.insertAfter(current);
+            current = node;
         }
     }
 
@@ -36,37 +44,73 @@ public class SingleThreadedObjectPool<T> implements Pool<T> {
         }
     }
 
+    @Override
     public PoolNode<T> acquire() {
         if (freeNodes.next == null) {
-            PoolNodeImpl<T> newNode = new PoolNodeImpl<>();
-            newNode.item = this.supplier.get();
+            freeNodes.next = new PoolNodeImpl<>();
+            freeNodes.next.prev = freeNodes;
+            freeNodes.next.item = this.supplier.get();
             additionalNodes++;
-            return newNode;
-        } else {
-            PoolNodeImpl<T> free = freeNodes.next;
-            freeNodes.next = free.next;
-            return free;
+        }
+
+        final var free = freeNodes.next;
+        free.removeMyself();
+        free.insertAfter(usedNodes);
+
+        return free;
+    }
+
+    @Override
+    public void release(final PoolNode<T> node) {
+        PoolNodeImpl<T> casted = (PoolNodeImpl<T>) node;
+
+        casted.removeMyself();
+        casted.insertAfter(freeNodes);
+    }
+
+    @Override
+    public void releaseAll() {
+        PoolNodeImpl<T> current = usedNodes.next;
+        while (current != null) {
+            final var next = current.next;
+            current.removeMyself();
+            current.insertAfter(freeNodes);
+            current = next;
         }
     }
 
-    public void release(PoolNode<T> node) {
-        PoolNodeImpl<T> casted = (PoolNodeImpl<T>) node;
-        casted.next = freeNodes.next;
-        freeNodes.next = casted;
-    }
-
+    @VisibleForTesting
     public int getAdditionalNodesCreated() {
         return additionalNodes;
     }
 
     private static class PoolNodeImpl<T> implements PoolNode<T> {
-        PoolNodeImpl<T> next = null;
+        PoolNodeImpl<T> next, prev = null;
 
         T item = null;
 
         @Override
         public T getItem() {
             return item;
+        }
+
+        public void removeMyself() {
+            if (prev != null) {
+                prev.next = next;
+            }
+            if (next != null) {
+                next.prev = prev;
+            }
+        }
+
+        public void insertAfter(final PoolNodeImpl<T> other) {
+            next = other.next;
+            if (next != null) {
+                next.prev = this;
+            }
+
+            other.next = this;
+            prev = other;
         }
     }
 }
