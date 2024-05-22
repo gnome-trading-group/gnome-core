@@ -20,4 +20,6 @@ public interface GnomeString extends Comparable<GnomeString> {
     byte[] getBytes();
 
     void copyBytes(final byte[] dest);
+
+    int toInt();
 }

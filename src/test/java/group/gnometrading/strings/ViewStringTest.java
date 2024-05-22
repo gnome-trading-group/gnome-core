@@ -1,5 +1,6 @@
 package group.gnometrading.strings;
 
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -148,5 +149,25 @@ class ViewStringTest {
         } else {
             assertTrue(v1.compareTo(v2) > 0);
         }
+    }
+
+    private static Stream<Arguments> testToIntArguments() {
+        return Stream.of(
+                Arguments.of(new ViewString("1"), 1),
+                Arguments.of(new ViewString("101"), 101),
+                Arguments.of(new ViewString("000050"), 50)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("testToIntArguments")
+    void testToInt(ViewString str, int result) {
+        assertEquals(result, str.toInt());
+    }
+
+    @Test
+    void testToIntExceptions() {
+        assertThrows(NumberFormatException.class, () -> new ViewString().toInt());
+        assertThrows(NumberFormatException.class, () -> new ViewString("aaa").toInt());
     }
 }

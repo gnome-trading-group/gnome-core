@@ -199,6 +199,24 @@ public class ViewString implements GnomeString {
     }
 
     @Override
+    public int toInt() {
+        if (this.length == 0) {
+            throw new NumberFormatException("Empty string");
+        }
+
+        int result = 0;
+        for (int i = 0; i < this.length; i++) {
+            byte at = this.byteAt(i);
+            if (at > '9' || at < '0') {
+                throw new NumberFormatException("Invalid character: " + at);
+            }
+            result *= 10;
+            result += (at - '0');
+        }
+        return result;
+    }
+
+    @Override
     public String toString() {
         return new String(this.bytes, this.offset, this.length);
     }
