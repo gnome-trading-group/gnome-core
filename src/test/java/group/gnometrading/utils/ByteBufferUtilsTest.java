@@ -7,6 +7,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -55,5 +56,29 @@ class ByteBufferUtilsTest {
         for (int i = 0; i < result.length; i++) {
             assertEquals(result[i], input.get(i));
         }
+    }
+
+    private static Stream<Arguments> testPutNaturalIntAsciiArguments() {
+        return Stream.of(
+                Arguments.of(ByteBuffer.allocate(1), 0, "0", 1),
+                Arguments.of(ByteBuffer.allocate(1), 1, "1", 1),
+                Arguments.of(ByteBuffer.allocate(6), 123456, "123456", 6),
+                Arguments.of(ByteBuffer.wrap("a000000".getBytes()).position(1), 123456, "a123456", 6),
+                Arguments.of(ByteBuffer.wrap("a000000aa".getBytes()).position(1), 123456, "a123456aa", 6),
+                Arguments.of(ByteBuffer.wrap("a000000aaa".getBytes()).position(1), 123456789, "a123456789", 9)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("testPutNaturalIntAsciiArguments")
+    void testPutNaturalIntAscii(ByteBuffer input, int value, String result, int expectedDigits) {
+        int startIdx = input.position();
+        input.mark();
+
+        int digits = ByteBufferUtils.putNaturalIntAscii(input, value);
+        assertEquals(startIdx + digits, input.position());
+        assertEquals(expectedDigits, digits);
+        input.clear();
+        assertEquals(result, String.valueOf(StandardCharsets.US_ASCII.decode(input)));
     }
 }
