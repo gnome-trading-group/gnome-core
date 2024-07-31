@@ -44,7 +44,7 @@ public class PooledHashMap<K, V> implements GnomeMap<K, V> {
         final int hash = hash(key);
         Node<K, V> node = this.hashTable[hash & (this.hashTable.length - 1)];
         while (node != null) {
-            if (node.key == key) {
+            if (node.key.equals(key)) {
                 return node.value;
             }
             node = node.next;
@@ -61,7 +61,7 @@ public class PooledHashMap<K, V> implements GnomeMap<K, V> {
 
         int idx = hash & (this.hashTable.length - 1);
         Node<K, V> node = this.hashTable[idx];
-        while (node != null && node.key != key) {
+        while (node != null && !node.key.equals(key)) {
             node = node.next;
         }
 
@@ -106,7 +106,7 @@ public class PooledHashMap<K, V> implements GnomeMap<K, V> {
 
         var node = this.hashTable[idx];
         var prev = this.hashTable[idx];
-        while (node != null && node.key != key) {
+        while (node != null && !node.key.equals(key)) {
             prev = node;
             node = node.next;
         }
