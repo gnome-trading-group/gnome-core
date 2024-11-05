@@ -8,10 +8,9 @@ public class ArrayCopy {
         if (len >= MIN_BYTES_TO_MEMCPY) {
             System.arraycopy(src, srcOffset, dest, destOffset, len);
         } else {
-            int srcIdx  = 0;
-            int destIdx = 0;
-            while(destIdx < len) {
-                dest[destIdx++] = src[srcIdx++];
+            int bytes = 0;
+            while(bytes++ < len) {
+                dest[destOffset++] = src[srcOffset++];
             }
         }
     }

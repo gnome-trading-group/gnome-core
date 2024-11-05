@@ -62,6 +62,67 @@ class MutableStringTest {
         assertNotEquals(oldHash, s.hashCode());
     }
 
+    private static Stream<Arguments> testJavaStringAppendArguments() {
+        return Stream.of(
+                Arguments.of((Supplier<MutableString>) () -> new MutableString(1), "a", "a"),
+                Arguments.of((Supplier<MutableString>) () -> new MutableString(5), "aaa", "aaa"),
+                Arguments.of((Supplier<MutableString>) () -> {
+                    var s = new MutableString(10);
+                    return s.appendString("hi");
+                }, "hello", "hihello")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("testJavaStringAppendArguments")
+    void testJavaStringAppend(Supplier<MutableString> subject, String other, String expected) {
+        var s = subject.get();
+        int oldHash = s.hashCode();
+        assertEquals(expected, s.appendString(other).toString());
+        assertNotEquals(oldHash, s.hashCode());
+    }
+
+    private static Stream<Arguments> testGnomeStringAppendArguments() {
+        return Stream.of(
+                Arguments.of((Supplier<MutableString>) () -> new MutableString(1), new ViewString("a"), "a"),
+                Arguments.of((Supplier<MutableString>) () -> new MutableString(5), new ViewString("aaa"), "aaa"),
+                Arguments.of((Supplier<MutableString>) () -> {
+                    var s = new MutableString(10);
+                    return s.appendString(new ViewString("hi"));
+                }, new ViewString("hello"), "hihello")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("testGnomeStringAppendArguments")
+    void testGnomeStringAppend(Supplier<MutableString> subject, GnomeString other, String expected) {
+        var s = subject.get();
+        int oldHash = s.hashCode();
+        assertEquals(expected, s.appendString(other).toString());
+        assertNotEquals(oldHash, s.hashCode());
+    }
+
+    private static Stream<Arguments> testIntAppendArguments() {
+        return Stream.of(
+                Arguments.of((Supplier<MutableString>) () -> new MutableString(3), 123, "123"),
+                Arguments.of((Supplier<MutableString>) () -> new MutableString(5), 0, "0"),
+                Arguments.of((Supplier<MutableString>) () -> new MutableString(1), 1, "1"),
+                Arguments.of((Supplier<MutableString>) () -> {
+                    var s = new MutableString(10);
+                    return s.appendNaturalIntAscii(123);
+                }, 456, "123456")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("testIntAppendArguments")
+    void testIntAppend(Supplier<MutableString> subject, int i, String expected) {
+        var s = subject.get();
+        int oldHash = s.hashCode();
+        assertEquals(expected, s.appendNaturalIntAscii(i).toString());
+        assertNotEquals(oldHash, s.hashCode());
+    }
+
     private static Stream<Arguments> testCopyArguments() {
         return Stream.of(
                 Arguments.of((Supplier<MutableString>) () -> new MutableString(1), new ViewString("a"), "a"),

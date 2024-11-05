@@ -1,6 +1,7 @@
 package group.gnometrading.strings;
 
 import group.gnometrading.utils.ArrayCopy;
+import group.gnometrading.utils.ByteBufferUtils;
 
 public class MutableString extends ViewString {
 
@@ -45,6 +46,27 @@ public class MutableString extends ViewString {
     public MutableString append(final byte b) {
         hash = 0;
         this.bytes[this.offset + this.length++] = b;
+        return this;
+    }
+
+    public MutableString appendString(final String other) {
+        hash = 0;
+        ArrayCopy.arraycopy(other.getBytes(), 0, this.bytes, this.length + this.offset, other.length());
+        this.length += other.length();
+        return this;
+    }
+
+    public MutableString appendString(final GnomeString other) {
+        hash = 0;
+        ArrayCopy.arraycopy(other.getBytes(), other.offset(), this.bytes, this.length + this.offset, other.length());
+        this.length += other.length();
+        return this;
+    }
+
+    public MutableString appendNaturalIntAscii(final int i) {
+        hash = 0;
+        int digits = ByteBufferUtils.putNaturalIntAscii(this.bytes, this.offset + this.length, i);
+        this.length += digits;
         return this;
     }
 }

@@ -1,6 +1,7 @@
 package group.gnometrading.strings;
 
 import group.gnometrading.utils.ArrayCopy;
+import group.gnometrading.utils.AsciiEncoding;
 
 public class ExpandingMutableString extends MutableString {
 
@@ -54,5 +55,23 @@ public class ExpandingMutableString extends MutableString {
     public MutableString append(final byte b) {
         ensureCapacity(1);
         return super.append(b);
+    }
+
+    @Override
+    public MutableString appendString(final String other) {
+        ensureCapacity(other.length());
+        return super.appendString(other);
+    }
+
+    @Override
+    public MutableString appendString(final GnomeString other) {
+        ensureCapacity(other.length());
+        return super.appendString(other);
+    }
+
+    @Override
+    public MutableString appendNaturalIntAscii(final int i) {
+        ensureCapacity(AsciiEncoding.digitCount(i));
+        return super.appendNaturalIntAscii(i);
     }
 }

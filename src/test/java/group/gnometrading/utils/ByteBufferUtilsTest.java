@@ -81,4 +81,22 @@ class ByteBufferUtilsTest {
         input.clear();
         assertEquals(result, String.valueOf(StandardCharsets.US_ASCII.decode(input)));
     }
+
+    private static Stream<Arguments> testPutNaturalIntAsciiArgumentsWithArray() {
+        return Stream.of(
+                Arguments.of("1".getBytes(), 0, 0, "0", 1),
+                Arguments.of("1".getBytes(), 0, 1, "1", 1),
+                Arguments.of("123".getBytes(), 0, 111, "111", 3),
+                Arguments.of("321".getBytes(), 1, 12, "312", 2),
+                Arguments.of("aaaaa99999".getBytes(), 3, 55555, "aaa5555599", 5)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("testPutNaturalIntAsciiArgumentsWithArray")
+    void testPutNaturalIntAscii(byte[] input, int offset, int value, String result, int expectedDigits) {
+        int digits = ByteBufferUtils.putNaturalIntAscii(input, offset, value);
+        assertEquals(expectedDigits, digits);
+        assertEquals(result, String.valueOf(StandardCharsets.US_ASCII.decode(ByteBuffer.wrap(input))));
+    }
 }
