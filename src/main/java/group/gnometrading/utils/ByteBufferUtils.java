@@ -18,6 +18,7 @@ public class ByteBufferUtils {
             buffer.put((byte) string.charAt(i));
         }
     }
+
     /**
      * Puts a Gnome string into a buffer.
      * @param buffer the buffer to write to

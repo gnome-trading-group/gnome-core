@@ -85,4 +85,20 @@ class MutableStringTest {
         string.reset();
         assertEquals("", string.toString());
     }
+
+    @Test
+    void testLength() {
+        MutableString string = new MutableString("123456789");
+        assertEquals("123456789", string.toString());
+
+        string.setLength(5);
+        assertEquals("12345", string.toString());
+
+        string.setLength(1);
+        assertEquals("1", string.toString());
+
+        string.setLength(0);
+        assertEquals("", string.toString());
+        assertEquals(0, string.length());
+    }
 }

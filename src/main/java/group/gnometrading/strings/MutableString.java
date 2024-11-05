@@ -37,6 +37,11 @@ public class MutableString extends ViewString {
         }
     }
 
+    public void setLength(final int length) {
+        hash = 0;
+        this.length = length;
+    }
+
     public MutableString append(final byte b) {
         hash = 0;
         this.bytes[this.offset + this.length++] = b;
