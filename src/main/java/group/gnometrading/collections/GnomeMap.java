@@ -1,8 +1,10 @@
 package group.gnometrading.collections;
 
+import group.gnometrading.utils.Resettable;
+
 import java.util.Collection;
 
-public interface GnomeMap<K, V> {
+public interface GnomeMap<K, V> extends Resettable {
     V get(K key);
 
     V put(K key, V value);
@@ -18,4 +20,9 @@ public interface GnomeMap<K, V> {
     void clear();
 
     Collection<K> keys();
+
+    @Override
+    default void reset() {
+        clear();
+    }
 }

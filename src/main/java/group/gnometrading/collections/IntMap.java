@@ -1,8 +1,10 @@
 package group.gnometrading.collections;
 
+import group.gnometrading.utils.Resettable;
+
 import java.util.Collection;
 
-public interface IntMap<T> {
+public interface IntMap<T> extends Resettable {
     T get(int key);
 
     T put(int key, T value);
@@ -18,4 +20,9 @@ public interface IntMap<T> {
     void clear();
 
     Collection<Integer> keys();
+
+    @Override
+    default void reset() {
+        clear();
+    }
 }
