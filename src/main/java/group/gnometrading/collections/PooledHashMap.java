@@ -128,12 +128,13 @@ public class PooledHashMap<K, V> implements GnomeMap<K, V> {
 
     @Override
     public void clear() {
-        for (Node<K, V> tNode : this.hashTable) {
-            Node<K, V> at = tNode;
+        for (int i = 0; i < this.hashTable.length; i++) {
+            Node<K, V> at = this.hashTable[i];
             while (at != null) {
                 nodePool.release(at.self);
                 at = at.next;
             }
+            this.hashTable[i] = null;
         }
         this.count = 0;
     }

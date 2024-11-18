@@ -131,12 +131,13 @@ public class LongHashMap<T> implements LongMap<T> {
 
     @Override
     public void clear() {
-        for (Node<T> tNode : this.hashTable) {
-            Node<T> at = tNode;
+        for (int i = 0; i < this.hashTable.length; i++) {
+            Node<T> at = this.hashTable[i];
             while (at != null) {
                 nodePool.release(at.self);
                 at = at.next;
             }
+            this.hashTable[i] = null;
         }
         this.count = 0;
     }

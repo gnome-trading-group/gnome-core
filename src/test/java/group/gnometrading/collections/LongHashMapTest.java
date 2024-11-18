@@ -67,6 +67,22 @@ class LongHashMapTest {
         assertEquals((1 << 10), map.size());
     }
 
+    @Test
+    void testClear() {
+        var map = new LongHashMap<Long>(1);
+        assertEquals(0, map.size());
+        assertTrue(map.isEmpty());
+
+        assertNull(map.get(1));
+        map.put(1, 2L);
+        assertNotNull(map.get(1));
+        assertEquals(1, map.size());
+
+        map.clear();
+        assertNull(map.get(1));
+        assertEquals(0, map.size());
+    }
+
     private static LongMap<Long> generate(String pairs) {
         LongMap<Long> map = new LongHashMap<>();
         for (String item : pairs.split(",")) {

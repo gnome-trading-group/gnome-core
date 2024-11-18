@@ -66,6 +66,22 @@ class IntHashMapTest {
         assertEquals((1 << 10), map.size());
     }
 
+    @Test
+    void testClear() {
+        var map = new IntHashMap<Integer>(1);
+        assertEquals(0, map.size());
+        assertTrue(map.isEmpty());
+
+        assertNull(map.get(1));
+        map.put(1, 2);
+        assertNotNull(map.get(1));
+        assertEquals(1, map.size());
+
+        map.clear();
+        assertNull(map.get(1));
+        assertEquals(0, map.size());
+    }
+
     private static IntMap<Integer> generate(String pairs) {
         IntMap<Integer> map = new IntHashMap<>();
         for (String item : pairs.split(",")) {

@@ -66,6 +66,23 @@ class PooledHashMapTest {
         assertEquals((1 << 10), map.size());
     }
 
+
+    @Test
+    void testClear() {
+        var map = new PooledHashMap<String, String>(1);
+        assertEquals(0, map.size());
+        assertTrue(map.isEmpty());
+
+        assertNull(map.get("1"));
+        map.put("1", "2");
+        assertEquals("2", map.get("1"));
+        assertEquals(1, map.size());
+
+        map.clear();
+        assertNull(map.get("1"));
+        assertEquals(0, map.size());
+    }
+
     private static GnomeMap<String, String> generate(String pairs) {
         GnomeMap<String, String> map = new PooledHashMap<>();
         for (String item : pairs.split(",")) {
