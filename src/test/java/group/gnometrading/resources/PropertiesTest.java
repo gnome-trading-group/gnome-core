@@ -37,4 +37,9 @@ class PropertiesTest {
     void testWeirdProperty() {
         assertEquals("hello==hellohello", properties.getStringProperty("weird.property"));
     }
+
+    @Test
+    void testNewLine() {
+        assertEquals("hey\nthis is on a new line", properties.getStringProperty("new.line"));
+    }
 }
