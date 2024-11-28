@@ -32,4 +32,9 @@ class PropertiesTest {
     void getStringProperty() {
         assertEquals("This is my string!", properties.getStringProperty("string.key"));
     }
+
+    @Test
+    void testWeirdProperty() {
+        assertEquals("hello==hellohello", properties.getStringProperty("weird.property"));
+    }
 }

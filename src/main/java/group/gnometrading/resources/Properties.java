@@ -32,7 +32,7 @@ public class Properties {
     }
 
     private void processLine(final String line) {
-        String[] parts = line.split("=");
+        String[] parts = line.split("=", 2);
         if (parts.length != 2) {
             throw new IllegalArgumentException("Invalid properties line: " + line);
         }
