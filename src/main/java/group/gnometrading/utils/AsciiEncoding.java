@@ -1,7 +1,21 @@
 package group.gnometrading.utils;
 
+import java.math.BigInteger;
+
+import static java.nio.charset.StandardCharsets.US_ASCII;
+
 public class AsciiEncoding {
     public static final byte ZERO = '0';
+
+    /**
+     * US-ASCII-encoded byte representation of the {@link Integer#MIN_VALUE}.
+     */
+    public static final byte[] MIN_INTEGER_VALUE = String.valueOf(Integer.MIN_VALUE).getBytes(US_ASCII);
+
+    /**
+     * US-ASCII-encoded byte representation of the {@link Long#MIN_VALUE}.
+     */
+    public static final byte[] MIN_LONG_VALUE = String.valueOf(Long.MIN_VALUE).getBytes(US_ASCII);
 
     /**
      * Lookup table used for encoding ints/longs as ASCII characters.
@@ -20,6 +34,11 @@ public class AsciiEncoding {
     };
 
     /**
+     * Maximum number of digits in a US-ASCII-encoded long.
+     */
+    public static final int LONG_MAX_DIGITS = 19;
+
+    /**
      * Power of ten for long values.
      */
     public static final long[] LONG_POW_10 = {
@@ -29,6 +48,7 @@ public class AsciiEncoding {
     };
 
     private static final long[] INT_DIGITS = new long[32];
+    private static final long[] LONG_DIGITS = new long[64];
 
     static {
         for (int i = 1; i < 33; i++) {
@@ -40,6 +60,19 @@ public class AsciiEncoding {
                 INT_DIGITS[i - 1] = (1L << 32) - LONG_POW_10[(int) smallestLog10] + (smallestLog10 << 32);
             } else {
                 INT_DIGITS[i - 1] = smallestLog10 << 32;
+            }
+        }
+
+        final BigInteger tenToNineteen = BigInteger.TEN.pow(19);
+        for (int i = 0; i < 64; i++) {
+            if (0 == i) {
+                LONG_DIGITS[i] = 1L << 52;
+            } else {
+                final int upper = ((i * 1262611) >> 22) + 1;
+                final long correction = upper < LONG_MAX_DIGITS ? LONG_POW_10[upper] >> (i >> 2) :
+                        tenToNineteen.shiftRight(i >> 2).longValueExact();
+                final long value = ((long)(upper + 1) << 52) - correction;
+                LONG_DIGITS[i] = value;
             }
         }
     }
@@ -56,5 +89,21 @@ public class AsciiEncoding {
      */
     public static int digitCount(final int value) {
         return (int)((value + INT_DIGITS[31 - Integer.numberOfLeadingZeros(value | 1)]) >> 32);
+    }
+
+    /**
+     * Count number of digits in a positive {@code long} value.
+     *
+     * <p>Implementation is based on the Kendall Willets' idea as presented in the
+     * <a href="https://lemire.me/blog/2021/06/03/computing-the-number-of-digits-of-an-integer-even-faster/"
+     * target="_blank">Computing the number of digits of an integer even faster</a> blog post.
+     *
+     * @param value to count number of digits int.
+     * @return number of digits in a number, e.g. if input value is {@code 12345678909876} then the result will be
+     * {@code 14}.
+     */
+    public static int digitCount(final long value) {
+        final int floorLog2 = 63 ^ Long.numberOfLeadingZeros(value | 1);
+        return (int)((LONG_DIGITS[floorLog2] + (value >> (floorLog2 >> 2))) >> 52);
     }
 }

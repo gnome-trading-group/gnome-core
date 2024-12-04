@@ -30,6 +30,149 @@ public class ByteBufferUtils {
         }
     }
 
+    public static int putDoubleAscii(final ByteBuffer buffer, final double value, final int scale) {
+        if (value == 0) {
+            buffer.put(ZERO);
+            return 1;
+        }
+
+        final long y;
+        int length;
+        final int digitCount;
+
+        if (value < 0) {
+            digitCount = digitCount(Math.round(-value));
+            y = Math.round(LONG_POW_10[scale] * -value);
+            buffer.put((byte) '-');
+
+            length = 1 + digitCount;
+        } else {
+            digitCount = digitCount(Math.round(value));
+            y = Math.round(LONG_POW_10[scale] * value);
+            length = digitCount;
+        }
+
+        long integerPart = y / LONG_POW_10[scale];
+        long fractionalPart = y % LONG_POW_10[scale];
+
+        putPositiveLongAscii(buffer, integerPart, digitCount);
+        if (scale > 0) {
+            length += 1 + scale;
+            buffer.put((byte) '.');
+            putNaturalPaddedLongAscii(buffer, scale, fractionalPart);
+        }
+        return length;
+    }
+
+    public static void putNaturalPaddedIntAscii(final ByteBuffer buffer, final int length, final int value) {
+        final int offset = buffer.position();
+        final int end = offset + length;
+        int remainder = value;
+        for (int index = end - 1; index >= offset; index--) {
+            final int digit = remainder % 10;
+            remainder = remainder / 10;
+            buffer.put(index, (byte) (ZERO + digit));
+        }
+        buffer.position(end);
+    }
+
+    public static void putNaturalPaddedLongAscii(final ByteBuffer buffer, final int length, final long value) {
+        final int offset = buffer.position();
+        final int end = offset + length;
+        long remainder = value;
+        for (int index = end - 1; index >= offset; index--) {
+            final long digit = remainder % 10;
+            remainder = remainder / 10;
+            buffer.put(index, (byte) (ZERO + digit));
+        }
+        buffer.position(end);
+    }
+
+    public static int putLongAscii(final ByteBuffer buffer, final long value) {
+        if (value == 0) {
+            buffer.put(ZERO);
+            return 1;
+        }
+
+        final int digitCount, length;
+        long quotient = value;
+        if (value < 0) {
+            if (value == Long.MIN_VALUE) {
+                buffer.put(MIN_LONG_VALUE);
+                return MIN_LONG_VALUE.length;
+            }
+
+            quotient = -quotient;
+            buffer.put((byte) '-');
+            digitCount = digitCount(quotient);
+            length = 1 + digitCount;
+        } else {
+            length = digitCount = digitCount(quotient);
+        }
+
+        putPositiveLongAscii(buffer, quotient, digitCount);
+        return length;
+    }
+
+    private static void putPositiveLongAscii(final ByteBuffer buffer, final long value, int digitCount) {
+        long quotient = value;
+        int offset = buffer.position();
+        int i = digitCount;
+        while (quotient >= 100_000_000)
+        {
+            final int lastEightDigits = (int)(quotient % 100_000_000);
+            quotient /= 100_000_000;
+
+            final int upperPart = lastEightDigits / 10_000;
+            final int lowerPart = lastEightDigits % 10_000;
+
+            final int u1 = (upperPart / 100) << 1;
+            final int u2 = (upperPart % 100) << 1;
+            final int l1 = (lowerPart / 100) << 1;
+            final int l2 = (lowerPart % 100) << 1;
+
+            i -= 8;
+
+            buffer.put(offset + i, ASCII_DIGITS[u1]);
+            buffer.put(offset + i + 1, ASCII_DIGITS[u1 + 1]);
+            buffer.put(offset + i + 2, ASCII_DIGITS[u2]);
+            buffer.put(offset + i + 3, ASCII_DIGITS[u2 + 1]);
+            buffer.put(offset + i + 4, ASCII_DIGITS[l1]);
+            buffer.put(offset + i + 5, ASCII_DIGITS[l1 + 1]);
+            buffer.put(offset + i + 6, ASCII_DIGITS[l2]);
+            buffer.put(offset + i + 7, ASCII_DIGITS[l2 + 1]);
+        }
+
+        putPositiveIntAscii(buffer, (int) quotient, i);
+        buffer.position(offset + digitCount);
+    }
+
+    public static int putIntAscii(final ByteBuffer buffer, final int value) {
+        if (value == 0) {
+            buffer.put(ZERO);
+            return 1;
+        }
+
+        final int digitCount, length;
+        int quotient = value;
+
+        if (value < 0) {
+            if (value == Integer.MIN_VALUE) {
+                buffer.put(MIN_INTEGER_VALUE);
+                return MIN_INTEGER_VALUE.length;
+            }
+            quotient = -quotient;
+            buffer.put((byte) '-');
+            digitCount = digitCount(quotient);
+            length = digitCount + 1;
+        } else {
+            length = digitCount = digitCount(quotient);
+        }
+
+        putPositiveIntAscii(buffer, quotient, digitCount);
+        return length;
+    }
+
     /**
      * Puts an ASCII-encoded int sized natural number into the buffer.
      *
