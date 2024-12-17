@@ -25,7 +25,9 @@ class JSONDecoderTest {
                 Arguments.of("100", 100),
                 Arguments.of("1001", 1001),
                 Arguments.of("1001534", 1001534),
-                Arguments.of("10.51", 10)
+                Arguments.of("10.51", 10),
+                Arguments.of("-10.51", -10),
+                Arguments.of("" + Integer.MAX_VALUE, Integer.MAX_VALUE)
         );
     }
 
@@ -35,13 +37,35 @@ class JSONDecoderTest {
         assertEquals(expected, new JSONDecoder().wrap(ByteBuffer.wrap(json.getBytes())).asInt());
     }
 
+    private static Stream<Arguments> testLongNodesArguments() {
+        return Stream.of(
+                Arguments.of("0", 0),
+                Arguments.of("1", 1),
+                Arguments.of("10", 10),
+                Arguments.of("100", 100),
+                Arguments.of("1001", 1001),
+                Arguments.of("1001534", 1001534),
+                Arguments.of("10.51", 10),
+                Arguments.of("-10.51", -10),
+                Arguments.of("" + Long.MAX_VALUE, Long.MAX_VALUE),
+                Arguments.of("" + Long.MIN_VALUE, Long.MIN_VALUE)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("testLongNodesArguments")
+    void testLongNodes(String json, long expected) {
+        assertEquals(expected, new JSONDecoder().wrap(ByteBuffer.wrap(json.getBytes())).asLong());
+    }
+
     private static Stream<Arguments> testDoubleNodesArguments() {
         return Stream.of(
                 Arguments.of("0", 0),
                 Arguments.of("0.1", 0.1),
                 Arguments.of("1.1", 1.1),
                 Arguments.of("10005.1042314", 10005.1042314),
-                Arguments.of("0.000005", 0.000005)
+                Arguments.of("0.000005", 0.000005),
+                Arguments.of("-0.000005", -0.000005)
         );
     }
 

@@ -111,15 +111,40 @@ public class JSONDecoder {
             return name;
         }
 
-        public double asDouble() {
-            return consumeDouble();
-        }
-
         public int asInt() {
-            return (int) consumeDouble();
+            consumeWhitespace();
+            boolean sign = false;
+            if (byteBuffer.get(byteBuffer.position()) == '-') {
+                sign = true;
+                byteBuffer.get();
+            }
+
+            int value = 0;
+            while (byteBuffer.remaining() > 0 && isNumber(byteBuffer.get(byteBuffer.position()))) {
+                byte at = byteBuffer.get();
+                value = 10 * value + at - '0';
+            }
+            return sign ? -value : value;
         }
 
-        private double consumeDouble() {
+        public long asLong() {
+            consumeWhitespace();
+            boolean sign = false;
+            if (byteBuffer.get(byteBuffer.position()) == '-') {
+                sign = true;
+                byteBuffer.get();
+            }
+
+            long value = 0;
+            while (byteBuffer.remaining() > 0 && isNumber(byteBuffer.get(byteBuffer.position()))) {
+                final byte at = byteBuffer.get();
+                value = 10 * value + at - '0';
+            }
+
+            return sign ? -value : value;
+        }
+
+        public double asDouble() {
             // I will not be handling E's here, sorry!
             consumeWhitespace();
             boolean sign = false;
@@ -129,11 +154,9 @@ public class JSONDecoder {
             }
 
             int value = 0;
-
             while (byteBuffer.remaining() > 0 && isNumber(byteBuffer.get(byteBuffer.position()))) {
                 byte at = byteBuffer.get();
-                value *= 10;
-                value += at - '0';
+                value = 10 * value + at - '0';
             }
 
             double remainder = 0;
