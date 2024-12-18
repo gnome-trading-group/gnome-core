@@ -149,10 +149,37 @@ public class JSONDecoder {
             }
 
             int value = 0;
-            while (byteBuffer.remaining() > 0 && isNumber(byteBuffer.get(byteBuffer.position()))) {
+            while (byteBuffer.hasRemaining() && isNumber(byteBuffer.get(byteBuffer.position()))) {
                 byte at = byteBuffer.get();
                 value = 10 * value + at - '0';
             }
+            return sign ? -value : value;
+        }
+
+        public long asFixedPointLong(final long scalingFactor) {
+            consumeWhitespace();
+            boolean sign = false;
+            if (byteBuffer.get(byteBuffer.position()) == '-') {
+                sign = true;
+                byteBuffer.get();
+            }
+
+            long value = 0;
+            while (byteBuffer.hasRemaining() && isNumber(byteBuffer.get(byteBuffer.position()))) {
+                final byte at = byteBuffer.get();
+                value = 10 * value + (at - '0') * scalingFactor;
+            }
+
+            if (byteBuffer.hasRemaining() && byteBuffer.get(byteBuffer.position()) == '.') {
+                byteBuffer.get();
+                long fractionalMultiplier = scalingFactor;
+                while (byteBuffer.hasRemaining() && isNumber(byteBuffer.get(byteBuffer.position()))) {
+                    fractionalMultiplier /= 10;
+                    final byte at = byteBuffer.get();
+                    value += (at - '0') * fractionalMultiplier;
+                }
+            }
+
             return sign ? -value : value;
         }
 
@@ -183,16 +210,16 @@ public class JSONDecoder {
             }
 
             int value = 0;
-            while (byteBuffer.remaining() > 0 && isNumber(byteBuffer.get(byteBuffer.position()))) {
+            while (byteBuffer.hasRemaining() && isNumber(byteBuffer.get(byteBuffer.position()))) {
                 byte at = byteBuffer.get();
                 value = 10 * value + at - '0';
             }
 
             double remainder = 0;
-            if (byteBuffer.remaining() > 0 && byteBuffer.get(byteBuffer.position()) == '.') {
+            if (byteBuffer.hasRemaining() && byteBuffer.get(byteBuffer.position()) == '.') {
                 int divisor = 10;
                 byteBuffer.get();
-                while (byteBuffer.remaining() > 0 && isNumber(byteBuffer.get(byteBuffer.position()))) {
+                while (byteBuffer.hasRemaining() && isNumber(byteBuffer.get(byteBuffer.position()))) {
                     byte at = byteBuffer.get();
                     remainder += (double) (at - '0') / divisor;
                     divisor *= 10;

@@ -37,6 +37,23 @@ class JSONDecoderTest {
         assertEquals(expected, new JSONDecoder().wrap(ByteBuffer.wrap(json.getBytes())).asInt());
     }
 
+    private static Stream<Arguments> testFixedPointLongNodesArguments() {
+        return Stream.of(
+                Arguments.of("0", 0, 1_000),
+                Arguments.of("1", 1_000, 1_000),
+                Arguments.of("1.1", 1_100, 1_000),
+                Arguments.of("1.1234", 1_123, 1_000),
+                Arguments.of("1234.532", 1234532000, 1_000_000),
+                Arguments.of("-1234.532", -1234532000, 1_000_000)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("testFixedPointLongNodesArguments")
+    void testFixedPointLongNodes(String json, long expected, long scalingFactor) {
+        assertEquals(expected, new JSONDecoder().wrap(ByteBuffer.wrap(json.getBytes())).asFixedPointLong(scalingFactor));
+    }
+
     private static Stream<Arguments> testLongNodesArguments() {
         return Stream.of(
                 Arguments.of("0", 0),
