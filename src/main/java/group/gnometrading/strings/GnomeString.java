@@ -22,4 +22,6 @@ public interface GnomeString extends Comparable<GnomeString> {
     void copyBytes(final byte[] dest);
 
     int toInt();
+
+    long toFixedPointLong(final long scalingFactor);
 }

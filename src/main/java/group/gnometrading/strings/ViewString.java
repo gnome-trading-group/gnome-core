@@ -205,15 +205,53 @@ public class ViewString implements GnomeString {
         }
 
         int result = 0;
+        boolean isNegative = false;
+
         for (int i = 0; i < this.length; i++) {
             byte at = this.byteAt(i);
-            if (at > '9' || at < '0') {
+            if (at == '-') {
+                isNegative = true;
+            } else if (at <= '9' && at >= '0') {
+                result = result * 10 + (at - '0');
+            } else {
                 throw new NumberFormatException("Invalid character: " + at);
             }
-            result *= 10;
-            result += (at - '0');
         }
-        return result;
+        return isNegative ? -result : result;
+    }
+
+    @Override
+    public long toFixedPointLong(final long scalingFactor) {
+        if (this.length == 0) {
+            throw new NumberFormatException("Empty string");
+        }
+
+        long result = 0;
+        boolean isNegative = false;
+        boolean inFraction = false;
+        long fractionalMultiplier = scalingFactor;
+
+        for (int i = 0; i < this.length; i++) {
+            final byte at = this.byteAt(i);
+
+            if (at == '-') {
+                isNegative = true;
+            } else if (at == '.') {
+                inFraction = true;
+            } else if (at >= '0' && at <= '9') {
+                final int digit = at - '0';
+                if (inFraction) {
+                    fractionalMultiplier /= 10;
+                    result += digit * fractionalMultiplier;
+                } else {
+                    result = result * 10 + digit * scalingFactor;
+                }
+            } else {
+                throw new NumberFormatException("Invalid character: " + at);
+            }
+        }
+
+        return isNegative ? -result : result;
     }
 
     @Override

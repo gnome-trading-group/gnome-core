@@ -155,7 +155,10 @@ class ViewStringTest {
         return Stream.of(
                 Arguments.of(new ViewString("1"), 1),
                 Arguments.of(new ViewString("101"), 101),
-                Arguments.of(new ViewString("000050"), 50)
+                Arguments.of(new ViewString("000050"), 50),
+                Arguments.of(new ViewString("-000050"), -50),
+                Arguments.of(new ViewString("" + Integer.MAX_VALUE), Integer.MAX_VALUE),
+                Arguments.of(new ViewString("" + Integer.MIN_VALUE), Integer.MIN_VALUE)
         );
     }
 
@@ -169,5 +172,28 @@ class ViewStringTest {
     void testToIntExceptions() {
         assertThrows(NumberFormatException.class, () -> new ViewString().toInt());
         assertThrows(NumberFormatException.class, () -> new ViewString("aaa").toInt());
+    }
+
+    private static Stream<Arguments> testToFixedPointLongArguments() {
+        return Stream.of(
+                Arguments.of(new ViewString("0"), 0, 0),
+                Arguments.of(new ViewString("1"), 0, 0),
+                Arguments.of(new ViewString("1"), 1_000, 1_000),
+                Arguments.of(new ViewString("-1.0"), -1_000, 1_000),
+                Arguments.of(new ViewString("-1.1234"), -1_123, 1_000),
+                Arguments.of(new ViewString("3452.134"), 34521340, 1_000_0)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("testToFixedPointLongArguments")
+    void testToFixedPointLong(ViewString str, long result, long scalingFactor) {
+        assertEquals(result, str.toFixedPointLong(scalingFactor));
+    }
+
+    @Test
+    void testToFixedPointLongExceptions() {
+        assertThrows(NumberFormatException.class, () -> new ViewString().toFixedPointLong(0));
+        assertThrows(NumberFormatException.class, () -> new ViewString("aaa").toFixedPointLong(0));
     }
 }
