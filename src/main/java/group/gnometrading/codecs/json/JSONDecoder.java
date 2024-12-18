@@ -19,6 +19,7 @@ public class JSONDecoder {
     private static final byte CH_TAB = '\t';
     private static final byte CH_CARRIAGE_RETURN = '\r';
     private static final int DEFAULT_NODES = 100;
+    private static final byte NULL_BYTE = 0;
 
     private final Pool<JSONNode> jsonNodePool;
     private ByteBuffer byteBuffer;
@@ -37,32 +38,35 @@ public class JSONDecoder {
     }
 
     private JSONNode consumeNode() {
-        PoolNode<JSONNode> poolNode = jsonNodePool.acquire();
-        JSONNode node = poolNode.getItem();
-        node.wrap(this.byteBuffer, () -> jsonNodePool.release(poolNode));
+        return consumeNode(NULL_BYTE);
+    }
+
+    private JSONNode consumeNode(final byte closing) {
+        final PoolNode<JSONNode> poolNode = jsonNodePool.acquire();
+        final JSONNode node = poolNode.getItem();
+        node.wrap(this.byteBuffer, poolNode, closing);
         return node;
     }
 
     private void consumeWhitespace() {
-        while (byteBuffer.remaining() > 0 && isWhitespace(byteBuffer.get(byteBuffer.position()))) {
+        while (byteBuffer.hasRemaining() && isWhitespace(byteBuffer.get(byteBuffer.position()))) {
             byteBuffer.get();
         }
     }
 
-    private void consumeUntilNextItem(final byte closingChar, final boolean exitEarly) {
-        while (byteBuffer.remaining() > 0) {
-            consumeWhitespace();
+    private void consumeUntilNextItem(final byte closingChar) {
+        while (byteBuffer.hasRemaining()) {
             if (this.byteBuffer.get(this.byteBuffer.position()) == closingChar) {
                 return;
             }
 
             final byte at = this.byteBuffer.get();
-            if (at == ',' && exitEarly) {
+            if (at == ',') {
                 break;
             } else if (at == '[') {
-                consumeUntilNextItem((byte) ']', false);
+                consumeRecursively((byte) ']');
             } else if (at == '{') {
-                consumeUntilNextItem((byte) '}', false);
+                consumeRecursively((byte) '}');
             }
         }
     }
@@ -72,10 +76,29 @@ public class JSONDecoder {
     }
 
     private void consume(final byte target) {
-        while (byteBuffer.remaining() > 0) {
-            byte b = byteBuffer.get();
+        while (byteBuffer.hasRemaining()) {
+            final byte b = byteBuffer.get();
             if (b == target) {
-                break;
+                return;
+            }
+        }
+    }
+
+    private void consumeRecursively(final byte target) {
+        while (byteBuffer.hasRemaining()) {
+            final byte b = byteBuffer.get();
+            if (b == target) {
+                return;
+            }
+
+            if (b == '[') {
+                consumeRecursively((byte) ']');
+            } else if (b == '{') {
+                consumeRecursively((byte) '}');
+            } else if (b == '\\') {
+                if (byteBuffer.hasRemaining() && byteBuffer.get(byteBuffer.position()) == target) {
+                    byteBuffer.get();
+                }
             }
         }
     }
@@ -85,8 +108,10 @@ public class JSONDecoder {
         private final ExpandingMutableString value;
         private final JSONArray jsonArray;
         private final JSONObject jsonObject;
+
         private ByteBuffer byteBuffer;
-        private Runnable release;
+        private PoolNode<JSONNode> parent;
+        private byte closing;
 
         public JSONNode() {
             this.name = new MutableString(200); // Over 200 byte key, I quit
@@ -95,16 +120,20 @@ public class JSONDecoder {
             this.jsonArray = new JSONArray();
         }
 
-        public void wrap(final ByteBuffer byteBuffer, final Runnable release) {
+        public void wrap(final ByteBuffer byteBuffer, final PoolNode<JSONNode> parent, final byte closing) {
             this.name.reset();
             this.value.reset();
             this.byteBuffer = byteBuffer;
-            this.release = release;
+            this.parent = parent;
+            this.closing = closing;
         }
 
         @Override
         public void close() {
-            release.run();
+            if (this.closing != NULL_BYTE) {
+                consumeUntilNextItem(this.closing);
+            }
+            jsonNodePool.release(this.parent);
         }
 
         public GnomeString getName() {
@@ -182,7 +211,7 @@ public class JSONDecoder {
 
             while (byteBuffer.remaining() > 0) {
                 byte at = byteBuffer.get();
-                if (at == '"') {
+                if (at == '"') { // TODO: Handle escape characters
                     break;
                 } else {
                     this.value.append(at);
@@ -230,17 +259,10 @@ public class JSONDecoder {
         }
 
         public JSONNode nextKey() {
-            PoolNode<JSONNode> poolNode = jsonNodePool.acquire();
-            JSONNode node = poolNode.getItem();
-            node.wrap(byteBuffer, () -> {
-                consumeUntilNextItem((byte) '}', true);
-                jsonNodePool.release(poolNode);
-            });
-
+            final JSONNode node = consumeNode((byte) '}');
             consume((byte) '"');
-            byte b;
             while (true) {
-                b = byteBuffer.get();
+                final byte b = byteBuffer.get();
                 if (b == '"') {
                     break;
                 } else {
@@ -254,7 +276,7 @@ public class JSONDecoder {
 
         @Override
         public void close() {
-            consume((byte) '}');
+            consumeRecursively((byte) '}');
         }
     }
 
@@ -268,13 +290,8 @@ public class JSONDecoder {
         }
 
         public JSONNode nextItem() {
-            PoolNode<JSONNode> poolNode = jsonNodePool.acquire();
-            JSONNode node = poolNode.getItem();
-            node.wrap(byteBuffer, () -> {
-                consumeUntilNextItem((byte) ']', true);
-                jsonNodePool.release(poolNode);
-            });
-            return node;
+            consumeWhitespace();
+            return consumeNode((byte) ']');
         }
 
         public boolean hasNextItem() {
@@ -284,7 +301,7 @@ public class JSONDecoder {
 
         @Override
         public void close() {
-            consume((byte) ']');
+            consumeRecursively((byte) ']');
         }
     }
 }

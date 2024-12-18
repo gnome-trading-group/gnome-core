@@ -272,13 +272,55 @@ class JSONDecoderTest {
     }
 
     @Test
+    public void testConsumesNestedObjects() {
+        String payload = """
+                {
+                    "key": {"child": {"child2": 5, "child3": {}}}, "key2": 10
+                }
+                """;
+        JSONDecoder jsonDecoder = new JSONDecoder();
+        try (final var obj = jsonDecoder.wrap(ByteBuffer.wrap(payload.getBytes())).asObject()) {
+            try (final var key = obj.nextKey()) {
+                // Do nothing with it
+            }
+            try (final var key2 = obj.nextKey()) {
+                assertTrue(key2.getName().equals("key2"));
+                assertEquals(10, key2.asInt());
+            }
+        }
+    }
+
+    @Test
+    public void testSkipsKeyObjects() {
+        String payload = """
+                {
+                    "key": {"child": {"child2": 5, "child3": {}}, "child2": 50}, "key2": 10
+                }
+                """;
+        JSONDecoder jsonDecoder = new JSONDecoder();
+        try (final var obj = jsonDecoder.wrap(ByteBuffer.wrap(payload.getBytes())).asObject()) {
+            try (final var key = obj.nextKey(); final var keyObj = key.asObject()) {
+                try (final var ignore = keyObj.nextKey()) {}
+
+                try (final var child2 = keyObj.nextKey()) {
+                    assertEquals(50, child2.asInt());
+                }
+            }
+            try (final var key2 = obj.nextKey()) {
+                assertTrue(key2.getName().equals("key2"));
+                assertEquals(10, key2.asInt());
+            }
+        }
+    }
+
+    @Test
     public void testWeirdlyNestedDump() {
         String payload = """
                         {
-                          "key": {"hi": [{"hi2": [1]]},
-                          "arr": [[{"nested": [1]}]],
-                          "skip": [{}],
-                          "final": [null],
+                          "key": {"hi": [{"hi2": [1]}]},
+                          "arr": [[  {"nested": [1]  }] ],
+                          "skip": [{    }],
+                          "final": [   null],
                         }
                 """;
         JSONDecoder jsonDecoder = new JSONDecoder();
