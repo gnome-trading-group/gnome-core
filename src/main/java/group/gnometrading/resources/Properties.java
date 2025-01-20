@@ -1,7 +1,5 @@
 package group.gnometrading.resources;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
 import java.io.IOException;
 
 /**
@@ -11,18 +9,18 @@ import java.io.IOException;
  */
 public class Properties {
 
-    private final String filePath;
+    private final String resourcePath;
     private final java.util.Properties internalProps;
 
-    public Properties(final String filePath) throws IOException {
-        this.filePath = filePath;
+    public Properties(final String resourcePath) throws IOException {
+        this.resourcePath = resourcePath;
         this.internalProps = new java.util.Properties();
         this.loadProperties();
     }
 
     private void loadProperties() throws IOException {
-        try (var br = new BufferedReader(new FileReader(this.filePath))) {
-            this.internalProps.load(br);
+        try (var inputStream = this.getClass().getClassLoader().getResourceAsStream(this.resourcePath)) {
+            this.internalProps.load(inputStream);
         }
     }
 

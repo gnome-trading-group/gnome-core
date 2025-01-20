@@ -13,7 +13,7 @@ class PropertiesTest {
 
     @BeforeAll
     static void setUp() throws IOException {
-        properties = new Properties("src/test/resources/properties/test-props.properties");
+        properties = new Properties("properties/test-props.properties");
     }
 
     @Test
