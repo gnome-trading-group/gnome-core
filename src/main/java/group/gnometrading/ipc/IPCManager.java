@@ -33,6 +33,12 @@ public class IPCManager {
         return aeron.addPublication(CHANNEL, streamId);
     }
 
+    public Publication addExclusivePublication(final String streamName) {
+        final int streamId = this.getStreamId(streamName);
+
+        return aeron.addExclusivePublication(CHANNEL, streamId);
+    }
+
     private int getStreamId(final String streamName) {
         if (!streamMap.containsKey(streamName)) {
             streamMap.put(streamName, counter.getAndIncrement());

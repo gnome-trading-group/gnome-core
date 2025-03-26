@@ -2,6 +2,7 @@ package group.gnometrading.ipc;
 
 import io.aeron.Aeron;
 import io.aeron.ConcurrentPublication;
+import io.aeron.ExclusivePublication;
 import io.aeron.Subscription;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -39,6 +40,16 @@ class IPCManagerTest {
         final var result = ipcManager.addPublication("test");
         assertEquals(pub, result);
         verify(aeron, times(1)).addPublication("aeron:ipc", 0);
+    }
+
+    @Test
+    void testAddExclusivePublication() {
+        ExclusivePublication pub = mock();
+        when(aeron.addExclusivePublication("aeron:ipc", 0)).thenReturn(pub);
+
+        final var result = ipcManager.addExclusivePublication("test");
+        assertEquals(pub, result);
+        verify(aeron, times(1)).addExclusivePublication("aeron:ipc", 0);
     }
 
     @Test
