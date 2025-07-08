@@ -2,9 +2,12 @@ package group.gnometrading.utils;
 
 import group.gnometrading.strings.GnomeString;
 import group.gnometrading.strings.ViewString;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -13,6 +16,59 @@ import java.util.stream.Stream;
 import static org.junit.jupiter.api.Assertions.*;
 
 class ByteBufferUtilsTest {
+
+    @ParameterizedTest
+    @ValueSource(ints = {90, 378, 64, 128, 256, 512})
+    void testAlignedBufferAllocation(int size) {
+        ByteBuffer buffer = ByteBufferUtils.allocateAlignedBuffer(size);
+
+        assertTrue(ByteBufferUtils.isAligned(buffer),
+                "Buffer should be 64-byte aligned for size: " + size);
+
+        assertEquals(size, buffer.remaining(),
+                "Buffer should have the requested remaining capacity: " + size);
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {90, 378, 64, 128, 256, 512})
+    void testAlignedUnsafeBufferCreation(int size) {
+        UnsafeBuffer buffer = ByteBufferUtils.createAlignedUnsafeBuffer(size);
+
+        assertTrue(ByteBufferUtils.isAligned(buffer),
+                "UnsafeBuffer should be 64-byte aligned for size: " + size);
+
+        assertTrue(buffer.capacity() >= size,
+                "UnsafeBuffer should have at least the requested capacity: " + size);
+    }
+
+    @Test
+    void testAlignmentVerification() {
+        ByteBuffer alignedBuffer = ByteBufferUtils.allocateAlignedBuffer(100);
+        assertTrue(ByteBufferUtils.isAligned(alignedBuffer));
+
+        ByteBuffer unalignedBuffer = ByteBuffer.allocateDirect(100);
+        // Note: This might actually be aligned by chance, so we'll just test the method works
+        ByteBufferUtils.isAligned(unalignedBuffer); // Should not throw
+    }
+
+    @Test
+    void testAlignmentPaddingCalculation() {
+        ByteBuffer buffer = ByteBufferUtils.allocateAlignedBuffer(100);
+        int padding = ByteBufferUtils.calculateAlignmentPadding(buffer);
+
+        assertEquals(0, padding, "Aligned buffer should have 0 padding");
+    }
+
+    @Test
+    void testInvalidSize() {
+        assertThrows(IllegalArgumentException.class, () -> {
+            ByteBufferUtils.allocateAlignedBuffer(0);
+        });
+
+        assertThrows(IllegalArgumentException.class, () -> {
+            ByteBufferUtils.allocateAlignedBuffer(-1);
+        });
+    }
 
     private static Stream<Arguments> testJavaStringArguments() {
         return Stream.of(

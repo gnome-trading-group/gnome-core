@@ -1,12 +1,98 @@
 package group.gnometrading.utils;
 
 import group.gnometrading.strings.GnomeString;
+import org.agrona.BufferUtil;
+import org.agrona.concurrent.UnsafeBuffer;
 
 import java.nio.ByteBuffer;
 
 import static group.gnometrading.utils.AsciiEncoding.*;
 
-public class ByteBufferUtils {
+public final class ByteBufferUtils {
+
+    private static final int CACHE_LINE_SIZE = 64;
+    private static final int ALIGNMENT_MASK = CACHE_LINE_SIZE - 1;
+
+    private ByteBufferUtils() {}
+
+    /**
+     * Allocates a 64-byte aligned direct ByteBuffer for optimal HFT performance.
+     *
+     * @param size The required buffer size
+     * @return A 64-byte aligned direct ByteBuffer
+     */
+    public static ByteBuffer allocateAlignedBuffer(int size) {
+        if (size <= 0) {
+            throw new IllegalArgumentException("Buffer size must be positive");
+        }
+
+        int alignedSize = size + CACHE_LINE_SIZE;
+        ByteBuffer buffer = ByteBuffer.allocateDirect(alignedSize);
+
+        long alignmentOffset = calculateAlignmentPadding(buffer);
+        if (alignmentOffset > 0) {
+            buffer.position((int) alignmentOffset);
+            buffer.limit((int) alignmentOffset + size);
+            return buffer.slice();
+        }
+
+        buffer.limit(size);
+        return buffer;
+    }
+
+    /**
+     * Creates an UnsafeBuffer with 64-byte alignment for optimal HFT performance.
+     *
+     * @param size The required buffer size
+     * @return A 64-byte aligned UnsafeBuffer
+     */
+    public static UnsafeBuffer createAlignedUnsafeBuffer(int size) {
+        return new UnsafeBuffer(allocateAlignedBuffer(size));
+    }
+
+    /**
+     * Verifies that a buffer is 64-byte aligned.
+     *
+     * @param buffer The buffer to check
+     * @return true if the buffer is 64-byte aligned
+     */
+    public static boolean isAligned(ByteBuffer buffer) {
+        long address = BufferUtil.address(buffer);
+        return (address & ALIGNMENT_MASK) == 0;
+    }
+
+    /**
+     * Verifies that an UnsafeBuffer is 64-byte aligned.
+     *
+     * @param buffer The buffer to check
+     * @return true if the buffer is 64-byte aligned
+     */
+    public static boolean isAligned(UnsafeBuffer buffer) {
+        long address = buffer.addressOffset();
+        return (address & ALIGNMENT_MASK) == 0;
+    }
+
+    /**
+     * Calculates the padding needed to align a buffer to 64 bytes.
+     *
+     * @param buffer The buffer to calculate padding for
+     * @return The number of bytes needed for alignment
+     */
+    public static int calculateAlignmentPadding(ByteBuffer buffer) {
+        long address = BufferUtil.address(buffer);
+        return (int) ((CACHE_LINE_SIZE - (address & ALIGNMENT_MASK)) & ALIGNMENT_MASK);
+    }
+
+    /**
+     * Calculates the padding needed to align an UnsafeBuffer to 64 bytes.
+     *
+     * @param buffer The buffer to calculate padding for
+     * @return The number of bytes needed for alignment
+     */
+    public static int calculateAlignmentPadding(UnsafeBuffer buffer) {
+        long address = buffer.addressOffset();
+        return (int) ((CACHE_LINE_SIZE - (address & ALIGNMENT_MASK)) & ALIGNMENT_MASK);
+    }
 
     /**
      * Puts a string into a buffer.
