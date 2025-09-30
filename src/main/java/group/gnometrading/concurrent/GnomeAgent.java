@@ -4,7 +4,7 @@ public interface GnomeAgent {
     /**
      * Called once before the agent starts processing.
      */
-    void onStart() throws Exception;
+    default void onStart() throws Exception {}
 
     /**
      * Called once per loop iteration. Return number of work items processed.
@@ -14,10 +14,12 @@ public interface GnomeAgent {
     /**
      * Called once after the loop ends.
      */
-    void onClose();
+    default void onClose() {}
 
     /**
      * Used for diagnostics/logging/thread management.
      */
-    String roleName();
+    default String roleName() {
+        return this.getClass().getSimpleName();
+    }
 }
