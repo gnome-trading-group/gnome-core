@@ -27,6 +27,13 @@ public final class Schedule {
     }
 
     /**
+     * Forces the schedule to fire on the next check.
+     */
+    public void forceTrigger() {
+        this.nextFireTime = 0;
+    }
+
+    /**
      * Checks if the schedule should fire now. If so, runs the task and
      * reschedules for the next interval.
      */

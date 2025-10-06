@@ -324,18 +324,257 @@ class ScheduleTest {
     void testTaskExecutionOrder() {
         AtomicInteger executionOrder = new AtomicInteger(0);
         when(mockClock.time()).thenReturn(1000L, 1500L, 1500L);
-        
+
         doAnswer(invocation -> {
             executionOrder.set(1);
             return null;
         }).when(mockTask).run();
-        
+
         Schedule schedule = new Schedule(mockClock, 500, mockTask);
         schedule.start();
         schedule.check();
-        
+
         assertEquals(1, executionOrder.get());
         verify(mockTask, times(1)).run();
+    }
+
+    @Test
+    void testForceTriggerBeforeStart() {
+        when(mockClock.time()).thenReturn(1000L);
+
+        Schedule schedule = new Schedule(mockClock, 500, mockTask);
+        schedule.forceTrigger();
+        schedule.check();
+
+        verify(mockTask, times(1)).run();
+    }
+
+    @Test
+    void testForceTriggerAfterStart() {
+        when(mockClock.time()).thenReturn(1000L, 1200L, 1200L);
+
+        Schedule schedule = new Schedule(mockClock, 500, mockTask);
+        schedule.start();
+
+        // Before force trigger, task shouldn't fire at 1200 (1200 < 1500)
+        schedule.forceTrigger();
+        schedule.check();
+
+        verify(mockTask, times(1)).run();
+    }
+
+    @Test
+    void testForceTriggerCausesImmediateFire() {
+        when(mockClock.time()).thenReturn(1000L, 1100L);
+
+        Schedule schedule = new Schedule(mockClock, 500, mockTask);
+        schedule.start();
+        schedule.forceTrigger();
+
+        // Should fire immediately on next check, even though only 100ms elapsed
+        schedule.check();
+
+        verify(mockTask, times(1)).run();
+    }
+
+    @Test
+    void testForceTriggerReschedulesNormally() {
+        when(mockClock.time()).thenReturn(1000L, 1200L, 1200L);
+
+        Schedule schedule = new Schedule(mockClock, 500, mockTask);
+        schedule.start();
+        schedule.forceTrigger();
+        schedule.check();
+
+        verify(mockTask, times(1)).run();
+        // After forced trigger at time 1200, next fire should be at 1700
+        assertEquals(500, schedule.millisUntilNext());
+    }
+
+    @Test
+    void testForceTriggerMultipleTimes() {
+        when(mockClock.time()).thenReturn(1000L, 1100L, 1100L, 1200L);
+
+        Schedule schedule = new Schedule(mockClock, 500, mockTask);
+        schedule.start();
+
+        schedule.forceTrigger();
+        schedule.check();
+        verify(mockTask, times(1)).run();
+
+        schedule.forceTrigger();
+        schedule.check();
+        verify(mockTask, times(2)).run();
+    }
+
+    @Test
+    void testForceTriggerWithoutCheck() {
+        when(mockClock.time()).thenReturn(1000L, 1000L);
+
+        Schedule schedule = new Schedule(mockClock, 500, mockTask);
+        schedule.start();
+        schedule.forceTrigger();
+
+        // Task shouldn't run until check() is called
+        verify(mockTask, never()).run();
+
+        // millisUntilNext should return 0 after forceTrigger
+        assertEquals(0, schedule.millisUntilNext());
+    }
+
+    @Test
+    void testForceTriggerAfterNormalFire() {
+        when(mockClock.time()).thenReturn(1000L, 1500L, 1500L, 1600L);
+
+        Schedule schedule = new Schedule(mockClock, 500, mockTask);
+        schedule.start();
+
+        // Normal fire at 1500
+        schedule.check();
+        verify(mockTask, times(1)).run();
+        assertEquals(500, schedule.millisUntilNext());
+
+        // Force trigger before next scheduled time
+        schedule.forceTrigger();
+        schedule.check();
+        verify(mockTask, times(2)).run();
+    }
+
+    @Test
+    void testForceTriggerWithTaskException() {
+        when(mockClock.time()).thenReturn(1000L, 1200L, 1200L);
+        doThrow(new RuntimeException("Task failed")).when(mockTask).run();
+
+        Schedule schedule = new Schedule(mockClock, 500, mockTask);
+        schedule.start();
+        schedule.forceTrigger();
+
+        assertThrows(RuntimeException.class, schedule::check);
+
+        // Should still reschedule after exception
+        assertEquals(500, schedule.millisUntilNext());
+    }
+
+    @Test
+    void testForceTriggerSetsNextFireTimeToZero() {
+        when(mockClock.time()).thenReturn(1000L, 1000L);
+
+        Schedule schedule = new Schedule(mockClock, 500, mockTask);
+        schedule.start();
+
+        // Before force trigger, millisUntilNext should be 500
+        assertEquals(500, schedule.millisUntilNext());
+
+        schedule.forceTrigger();
+
+        // After force trigger, millisUntilNext should be 0
+        assertEquals(0, schedule.millisUntilNext());
+    }
+
+    @Test
+    void testForceTriggerBeforeScheduledTime() {
+        when(mockClock.time()).thenReturn(1000L, 1300L);
+
+        Schedule schedule = new Schedule(mockClock, 500, mockTask);
+        schedule.start();
+
+        // Normally would fire at 1500, but force trigger at 1300
+        schedule.forceTrigger();
+        schedule.check();
+
+        verify(mockTask, times(1)).run();
+    }
+
+    @Test
+    void testForceTriggerAtExactScheduledTime() {
+        when(mockClock.time()).thenReturn(1000L, 1500L, 1500L);
+
+        Schedule schedule = new Schedule(mockClock, 500, mockTask);
+        schedule.start();
+
+        // Force trigger at exact scheduled time
+        schedule.forceTrigger();
+        schedule.check();
+
+        // Should still fire (would have fired anyway)
+        verify(mockTask, times(1)).run();
+        assertEquals(500, schedule.millisUntilNext());
+    }
+
+    @Test
+    void testForceTriggerAfterScheduledTime() {
+        when(mockClock.time()).thenReturn(1000L, 1600L, 1600L);
+
+        Schedule schedule = new Schedule(mockClock, 500, mockTask);
+        schedule.start();
+
+        // Force trigger after scheduled time (already overdue)
+        schedule.forceTrigger();
+        schedule.check();
+
+        verify(mockTask, times(1)).run();
+        assertEquals(500, schedule.millisUntilNext());
+    }
+
+    @Test
+    void testMultipleForceTriggerCallsBeforeCheck() {
+        when(mockClock.time()).thenReturn(1000L, 1200L);
+
+        Schedule schedule = new Schedule(mockClock, 500, mockTask);
+        schedule.start();
+
+        // Multiple force trigger calls should be idempotent
+        schedule.forceTrigger();
+        schedule.forceTrigger();
+        schedule.forceTrigger();
+
+        schedule.check();
+
+        // Should only fire once
+        verify(mockTask, times(1)).run();
+    }
+
+    @Test
+    void testForceTriggerWithZeroTime() {
+        when(mockClock.time()).thenReturn(0L, 0L);
+
+        Schedule schedule = new Schedule(mockClock, 100, mockTask);
+        schedule.start();
+        schedule.forceTrigger();
+        schedule.check();
+
+        verify(mockTask, times(1)).run();
+    }
+
+    @Test
+    void testForceTriggerInterleaved() {
+        when(mockClock.time()).thenReturn(
+                1000L,  // start
+                1100L,  // force trigger check
+                1100L,  // millisUntilNext
+                1500L,  // normal check - doesn't fire
+                1600L,  // force trigger check again
+                1600L   // millisUntilNext
+        );
+
+        Schedule schedule = new Schedule(mockClock, 500, mockTask);
+        schedule.start();
+
+        // Force trigger at 1100
+        schedule.forceTrigger();
+        schedule.check();
+        verify(mockTask, times(1)).run();
+        assertEquals(500, schedule.millisUntilNext());
+
+        // Normal check at 1500 - shouldn't fire (next fire is at 1600)
+        schedule.check();
+        verify(mockTask, times(1)).run();
+
+        // Force trigger at 1600
+        schedule.forceTrigger();
+        schedule.check();
+        verify(mockTask, times(2)).run();
+        assertEquals(500, schedule.millisUntilNext());
     }
 }
 
