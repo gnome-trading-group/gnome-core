@@ -7,7 +7,7 @@ public final class Schedule {
     private final long repeatMillis;
     private final Runnable task;
 
-    private long nextFireTime;
+    private volatile long nextFireTime;
 
     public Schedule(EpochClock clock, long repeatMillis, Runnable task) {
         if (repeatMillis <= 0) {
