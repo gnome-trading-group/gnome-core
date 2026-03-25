@@ -1,19 +1,18 @@
 package group.gnometrading.utils;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import group.gnometrading.strings.GnomeString;
 import group.gnometrading.strings.ViewString;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.util.stream.Stream;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
-
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
-import java.util.stream.Stream;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 class ByteBufferUtilsTest {
 
@@ -22,11 +21,9 @@ class ByteBufferUtilsTest {
     void testAlignedBufferAllocation(int size) {
         ByteBuffer buffer = ByteBufferUtils.allocateAlignedBuffer(size);
 
-        assertTrue(ByteBufferUtils.isAligned(buffer),
-                "Buffer should be 64-byte aligned for size: " + size);
+        assertTrue(ByteBufferUtils.isAligned(buffer), "Buffer should be 64-byte aligned for size: " + size);
 
-        assertEquals(size, buffer.remaining(),
-                "Buffer should have the requested remaining capacity: " + size);
+        assertEquals(size, buffer.remaining(), "Buffer should have the requested remaining capacity: " + size);
     }
 
     @ParameterizedTest
@@ -34,11 +31,9 @@ class ByteBufferUtilsTest {
     void testAlignedUnsafeBufferCreation(int size) {
         UnsafeBuffer buffer = ByteBufferUtils.createAlignedUnsafeBuffer(size);
 
-        assertTrue(ByteBufferUtils.isAligned(buffer),
-                "UnsafeBuffer should be 64-byte aligned for size: " + size);
+        assertTrue(ByteBufferUtils.isAligned(buffer), "UnsafeBuffer should be 64-byte aligned for size: " + size);
 
-        assertTrue(buffer.capacity() >= size,
-                "UnsafeBuffer should have at least the requested capacity: " + size);
+        assertTrue(buffer.capacity() >= size, "UnsafeBuffer should have at least the requested capacity: " + size);
     }
 
     @Test
@@ -75,8 +70,7 @@ class ByteBufferUtilsTest {
                 Arguments.of(ByteBuffer.wrap("".getBytes()), "", "".getBytes()),
                 Arguments.of(ByteBuffer.allocate(5), "hello", "hello".getBytes()),
                 Arguments.of(ByteBuffer.wrap("ahello".getBytes()), "hello", "helloo".getBytes()),
-                Arguments.of(ByteBuffer.wrap("ahello".getBytes()).position(1), "hello", "ahello".getBytes())
-        );
+                Arguments.of(ByteBuffer.wrap("ahello".getBytes()).position(1), "hello", "ahello".getBytes()));
     }
 
     @ParameterizedTest
@@ -97,8 +91,10 @@ class ByteBufferUtilsTest {
                 Arguments.of(ByteBuffer.wrap("".getBytes()), new ViewString(""), "".getBytes()),
                 Arguments.of(ByteBuffer.allocate(5), new ViewString("hello"), "hello".getBytes()),
                 Arguments.of(ByteBuffer.wrap("ahello".getBytes()), new ViewString("hello"), "helloo".getBytes()),
-                Arguments.of(ByteBuffer.wrap("ahello".getBytes()).position(1), new ViewString("hello"), "ahello".getBytes())
-        );
+                Arguments.of(
+                        ByteBuffer.wrap("ahello".getBytes()).position(1),
+                        new ViewString("hello"),
+                        "ahello".getBytes()));
     }
 
     @ParameterizedTest
@@ -121,8 +117,7 @@ class ByteBufferUtilsTest {
                 Arguments.of(ByteBuffer.allocate(6), 123456, "123456", 6),
                 Arguments.of(ByteBuffer.wrap("a000000".getBytes()).position(1), 123456, "a123456", 6),
                 Arguments.of(ByteBuffer.wrap("a000000aa".getBytes()).position(1), 123456, "a123456aa", 6),
-                Arguments.of(ByteBuffer.wrap("a000000aaa".getBytes()).position(1), 123456789, "a123456789", 9)
-        );
+                Arguments.of(ByteBuffer.wrap("a000000aaa".getBytes()).position(1), 123456789, "a123456789", 9));
     }
 
     @ParameterizedTest
@@ -144,8 +139,7 @@ class ByteBufferUtilsTest {
                 Arguments.of("1".getBytes(), 0, 1, "1", 1),
                 Arguments.of("123".getBytes(), 0, 111, "111", 3),
                 Arguments.of("321".getBytes(), 1, 12, "312", 2),
-                Arguments.of("aaaaa99999".getBytes(), 3, 55555, "aaa5555599", 5)
-        );
+                Arguments.of("aaaaa99999".getBytes(), 3, 55555, "aaa5555599", 5));
     }
 
     @ParameterizedTest
@@ -167,8 +161,7 @@ class ByteBufferUtilsTest {
                 Arguments.of(ByteBuffer.allocate(6), -123.99, 1, "-124.0", 6),
                 Arguments.of(ByteBuffer.wrap("aaaaaa".getBytes()).position(1), 4.56, 2, "a4.56a", 4),
                 Arguments.of(ByteBuffer.wrap("aaaaaa".getBytes()).position(1), 4.56, 3, "a4.560", 5),
-                Arguments.of(ByteBuffer.wrap("aaaaaa".getBytes()).position(1), 4.56, 0, "a5aaaa", 1)
-        );
+                Arguments.of(ByteBuffer.wrap("aaaaaa".getBytes()).position(1), 4.56, 0, "a5aaaa", 1));
     }
 
     @ParameterizedTest
@@ -192,8 +185,7 @@ class ByteBufferUtilsTest {
                 Arguments.of(ByteBuffer.allocate(3), 1, 3, "001"),
                 Arguments.of(ByteBuffer.allocate(4), 5, 4, "0005"),
                 Arguments.of(ByteBuffer.wrap("bbbbb".getBytes()).position(0), 35, 4, "0035b"),
-                Arguments.of(ByteBuffer.wrap("bbbbb".getBytes()).position(1), 35, 3, "b035b")
-        );
+                Arguments.of(ByteBuffer.wrap("bbbbb".getBytes()).position(1), 35, 3, "b035b"));
     }
 
     @ParameterizedTest
@@ -215,8 +207,7 @@ class ByteBufferUtilsTest {
                 Arguments.of(ByteBuffer.allocate(4), 5, 4, "0005"),
                 Arguments.of(ByteBuffer.wrap("bbbbb".getBytes()).position(0), 35, 4, "0035b"),
                 Arguments.of(ByteBuffer.wrap("bbbbb".getBytes()).position(1), 35, 3, "b035b"),
-                Arguments.of(ByteBuffer.allocate(20), Long.MAX_VALUE, 20, "0" + Long.MAX_VALUE)
-        );
+                Arguments.of(ByteBuffer.allocate(20), Long.MAX_VALUE, 20, "0" + Long.MAX_VALUE));
     }
 
     @ParameterizedTest
@@ -236,8 +227,7 @@ class ByteBufferUtilsTest {
                 Arguments.of(ByteBuffer.allocate(2), -1, 2, "-1"),
                 Arguments.of(ByteBuffer.allocate(4), -123, 4, "-123"),
                 Arguments.of(ByteBuffer.allocate(11), Integer.MIN_VALUE, 11, "" + Integer.MIN_VALUE),
-                Arguments.of(ByteBuffer.allocate(10), Integer.MAX_VALUE, 10, "" + Integer.MAX_VALUE)
-        );
+                Arguments.of(ByteBuffer.allocate(10), Integer.MAX_VALUE, 10, "" + Integer.MAX_VALUE));
     }
 
     @ParameterizedTest
@@ -260,8 +250,7 @@ class ByteBufferUtilsTest {
                 Arguments.of(ByteBuffer.allocate(11), Integer.MIN_VALUE, 11, "" + Integer.MIN_VALUE),
                 Arguments.of(ByteBuffer.allocate(10), Integer.MAX_VALUE, 10, "" + Integer.MAX_VALUE),
                 Arguments.of(ByteBuffer.allocate(20), Long.MIN_VALUE, 20, "" + Long.MIN_VALUE),
-                Arguments.of(ByteBuffer.allocate(19), Long.MAX_VALUE, 19, "" + Long.MAX_VALUE)
-        );
+                Arguments.of(ByteBuffer.allocate(19), Long.MAX_VALUE, 19, "" + Long.MAX_VALUE));
     }
 
     @ParameterizedTest

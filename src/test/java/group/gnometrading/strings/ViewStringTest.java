@@ -1,14 +1,13 @@
 package group.gnometrading.strings;
 
+import static org.junit.jupiter.api.Assertions.*;
+
+import java.util.function.Supplier;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import java.util.function.Supplier;
-import java.util.stream.Stream;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 class ViewStringTest {
 
@@ -17,8 +16,7 @@ class ViewStringTest {
                 Arguments.of((Supplier<ViewString>) (ViewString::new), ""),
                 Arguments.of((Supplier<ViewString>) () -> new ViewString("whats up"), "whats up"),
                 Arguments.of((Supplier<ViewString>) () -> new ViewString(new ViewString("whats up")), "whats up"),
-                Arguments.of((Supplier<ViewString>) () -> new ViewString(new byte[] {'h', 'i'}), "hi")
-        );
+                Arguments.of((Supplier<ViewString>) () -> new ViewString(new byte[] {'h', 'i'}), "hi"));
     }
 
     @ParameterizedTest
@@ -37,8 +35,7 @@ class ViewStringTest {
                 Arguments.of(new byte[] {'a'}, 1, 1, "", false),
                 Arguments.of(new byte[] {'a', 'A', 'a', 'b'}, 0, 4, "AaAb", true),
                 Arguments.of(new byte[] {'a', 'A', 'a', 'b'}, 0, 4, "AaAc", false),
-                Arguments.of(new byte[] {'b', 'C', 'd', 'e'}, 1, 3, "cDE", true)
-        );
+                Arguments.of(new byte[] {'b', 'C', 'd', 'e'}, 1, 3, "cDE", true));
     }
 
     @ParameterizedTest
@@ -57,8 +54,7 @@ class ViewStringTest {
                 Arguments.of(new byte[] {'a'}, 1, 1, new ViewString(""), false),
                 Arguments.of(new byte[] {'a', 'A', 'a', 'b'}, 0, 4, new ViewString("AaAb"), true),
                 Arguments.of(new byte[] {'a', 'A', 'a', 'b'}, 0, 4, new ViewString("AaAc"), false),
-                Arguments.of(new byte[] {'b', 'C', 'd', 'e'}, 1, 3, new ViewString("cDE"), true)
-        );
+                Arguments.of(new byte[] {'b', 'C', 'd', 'e'}, 1, 3, new ViewString("cDE"), true));
     }
 
     @ParameterizedTest
@@ -74,9 +70,7 @@ class ViewStringTest {
                 Arguments.of(new ViewString(""), new ViewString(""), true),
                 Arguments.of(new ViewString(""), new ViewString("1"), false),
                 Arguments.of(new ViewString("1"), new ViewString("1"), true),
-                Arguments.of(new ViewString("1"), new ViewString("12"), false)
-
-        );
+                Arguments.of(new ViewString("1"), new ViewString("12"), false));
     }
 
     @ParameterizedTest
@@ -91,9 +85,7 @@ class ViewStringTest {
                 Arguments.of(new ViewString(""), "", true),
                 Arguments.of(new ViewString(""), "1", false),
                 Arguments.of(new ViewString("1"), "1", true),
-                Arguments.of(new ViewString("1"), "12", false)
-
-        );
+                Arguments.of(new ViewString("1"), "12", false));
     }
 
     @ParameterizedTest
@@ -115,8 +107,7 @@ class ViewStringTest {
                 Arguments.of(new ViewString(""), "1", false),
                 Arguments.of(new ViewString("1"), "1", true),
                 Arguments.of(new ViewString("1"), new ViewString("1"), true),
-                Arguments.of(new ViewString("1"), 1, false)
-        );
+                Arguments.of(new ViewString("1"), 1, false));
     }
 
     @ParameterizedTest
@@ -135,8 +126,7 @@ class ViewStringTest {
                 Arguments.of(new ViewString("abc"), new ViewString("ab"), 1),
                 Arguments.of(new ViewString("ab"), new ViewString("abc"), -1),
                 Arguments.of(new ViewString("Ab"), new ViewString("abc"), -1),
-                Arguments.of(new ViewString("ab"), new ViewString("Abc"), 1)
-        );
+                Arguments.of(new ViewString("ab"), new ViewString("Abc"), 1));
     }
 
     @ParameterizedTest
@@ -158,8 +148,7 @@ class ViewStringTest {
                 Arguments.of(new ViewString("000050"), 50),
                 Arguments.of(new ViewString("-000050"), -50),
                 Arguments.of(new ViewString("" + Integer.MAX_VALUE), Integer.MAX_VALUE),
-                Arguments.of(new ViewString("" + Integer.MIN_VALUE), Integer.MIN_VALUE)
-        );
+                Arguments.of(new ViewString("" + Integer.MIN_VALUE), Integer.MIN_VALUE));
     }
 
     @ParameterizedTest
@@ -181,8 +170,7 @@ class ViewStringTest {
                 Arguments.of(new ViewString("1"), 1_000, 1_000),
                 Arguments.of(new ViewString("-1.0"), -1_000, 1_000),
                 Arguments.of(new ViewString("-1.1234"), -1_123, 1_000),
-                Arguments.of(new ViewString("3452.134"), 34521340, 1_000_0)
-        );
+                Arguments.of(new ViewString("3452.134"), 34521340, 1_000_0));
     }
 
     @ParameterizedTest

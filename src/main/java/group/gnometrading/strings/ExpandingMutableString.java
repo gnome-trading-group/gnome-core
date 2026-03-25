@@ -3,7 +3,7 @@ package group.gnometrading.strings;
 import group.gnometrading.utils.ArrayCopy;
 import group.gnometrading.utils.AsciiEncoding;
 
-public class ExpandingMutableString extends MutableString {
+public final class ExpandingMutableString extends MutableString {
 
     public ExpandingMutableString() {
         super(DEFAULT_CAPACITY);
@@ -52,9 +52,9 @@ public class ExpandingMutableString extends MutableString {
     }
 
     @Override
-    public MutableString append(final byte b) {
+    public MutableString append(final byte value) {
         ensureCapacity(1);
-        return super.append(b);
+        return super.append(value);
     }
 
     @Override
@@ -70,8 +70,8 @@ public class ExpandingMutableString extends MutableString {
     }
 
     @Override
-    public MutableString appendNaturalIntAscii(final int i) {
-        ensureCapacity(AsciiEncoding.digitCount(i));
-        return super.appendNaturalIntAscii(i);
+    public MutableString appendNaturalIntAscii(final int value) {
+        ensureCapacity(AsciiEncoding.digitCount(value));
+        return super.appendNaturalIntAscii(value);
     }
 }

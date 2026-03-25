@@ -1,4 +1,3 @@
 package group.gnometrading.annotations;
 
-public @interface VisibleForTesting {
-}
+public @interface VisibleForTesting {}

@@ -1,14 +1,13 @@
 package group.gnometrading.strings;
 
+import static org.junit.jupiter.api.Assertions.*;
+
+import java.util.function.Supplier;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import java.util.function.Supplier;
-import java.util.stream.Stream;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 class MutableStringTest {
 
@@ -17,8 +16,7 @@ class MutableStringTest {
                 Arguments.of((Supplier<MutableString>) (MutableString::new), ""),
                 Arguments.of((Supplier<MutableString>) () -> new MutableString(0), ""),
                 Arguments.of((Supplier<MutableString>) () -> new MutableString(new ViewString("whats up")), "whats up"),
-                Arguments.of((Supplier<MutableString>) () -> new MutableString("whats up 2.0"), "whats up 2.0")
-        );
+                Arguments.of((Supplier<MutableString>) () -> new MutableString("whats up 2.0"), "whats up 2.0"));
     }
 
     @ParameterizedTest
@@ -46,11 +44,13 @@ class MutableStringTest {
     private static Stream<Arguments> testByteAppendArguments() {
         return Stream.of(
                 Arguments.of((Supplier<MutableString>) () -> new MutableString(1), (byte) 'a', "a"),
-                Arguments.of((Supplier<MutableString>) () -> {
-                    var s = new MutableString(2);
-                    return s.append((byte) 'b');
-                }, (byte) 'a', "ba")
-        );
+                Arguments.of(
+                        (Supplier<MutableString>) () -> {
+                            var s = new MutableString(2);
+                            return s.append((byte) 'b');
+                        },
+                        (byte) 'a',
+                        "ba"));
     }
 
     @ParameterizedTest
@@ -66,11 +66,13 @@ class MutableStringTest {
         return Stream.of(
                 Arguments.of((Supplier<MutableString>) () -> new MutableString(1), "a", "a"),
                 Arguments.of((Supplier<MutableString>) () -> new MutableString(5), "aaa", "aaa"),
-                Arguments.of((Supplier<MutableString>) () -> {
-                    var s = new MutableString(10);
-                    return s.appendString("hi");
-                }, "hello", "hihello")
-        );
+                Arguments.of(
+                        (Supplier<MutableString>) () -> {
+                            var s = new MutableString(10);
+                            return s.appendString("hi");
+                        },
+                        "hello",
+                        "hihello"));
     }
 
     @ParameterizedTest
@@ -86,11 +88,13 @@ class MutableStringTest {
         return Stream.of(
                 Arguments.of((Supplier<MutableString>) () -> new MutableString(1), new ViewString("a"), "a"),
                 Arguments.of((Supplier<MutableString>) () -> new MutableString(5), new ViewString("aaa"), "aaa"),
-                Arguments.of((Supplier<MutableString>) () -> {
-                    var s = new MutableString(10);
-                    return s.appendString(new ViewString("hi"));
-                }, new ViewString("hello"), "hihello")
-        );
+                Arguments.of(
+                        (Supplier<MutableString>) () -> {
+                            var s = new MutableString(10);
+                            return s.appendString(new ViewString("hi"));
+                        },
+                        new ViewString("hello"),
+                        "hihello"));
     }
 
     @ParameterizedTest
@@ -107,11 +111,13 @@ class MutableStringTest {
                 Arguments.of((Supplier<MutableString>) () -> new MutableString(3), 123, "123"),
                 Arguments.of((Supplier<MutableString>) () -> new MutableString(5), 0, "0"),
                 Arguments.of((Supplier<MutableString>) () -> new MutableString(1), 1, "1"),
-                Arguments.of((Supplier<MutableString>) () -> {
-                    var s = new MutableString(10);
-                    return s.appendNaturalIntAscii(123);
-                }, 456, "123456")
-        );
+                Arguments.of(
+                        (Supplier<MutableString>) () -> {
+                            var s = new MutableString(10);
+                            return s.appendNaturalIntAscii(123);
+                        },
+                        456,
+                        "123456"));
     }
 
     @ParameterizedTest
@@ -126,8 +132,10 @@ class MutableStringTest {
     private static Stream<Arguments> testCopyArguments() {
         return Stream.of(
                 Arguments.of((Supplier<MutableString>) () -> new MutableString(1), new ViewString("a"), "a"),
-                Arguments.of((Supplier<MutableString>) () -> new MutableString("My replacing string"), new ViewString("Replaced!"), "Replaced!")
-        );
+                Arguments.of(
+                        (Supplier<MutableString>) () -> new MutableString("My replacing string"),
+                        new ViewString("Replaced!"),
+                        "Replaced!"));
     }
 
     @ParameterizedTest

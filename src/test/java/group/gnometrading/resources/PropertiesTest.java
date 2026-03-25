@@ -1,11 +1,10 @@
 package group.gnometrading.resources;
 
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.io.IOException;
-
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 class PropertiesTest {
 
@@ -66,11 +65,7 @@ class PropertiesTest {
 
     @Test
     void testMultipleCliOverrides() throws IOException {
-        String[] args = {
-            "--string.key=First Override",
-            "-Dint.valid.key=5555",
-            "--boolean.false.key=true"
-        };
+        String[] args = {"--string.key=First Override", "-Dint.valid.key=5555", "--boolean.false.key=true"};
         Properties propsWithCli = new Properties("properties/test-props.properties", args);
         assertEquals("First Override", propsWithCli.getStringProperty("string.key"));
         assertEquals(5555, propsWithCli.getIntProperty("int.valid.key"));
@@ -88,9 +83,7 @@ class PropertiesTest {
     @Test
     void testMultipleNewPropertiesViaCli() throws IOException {
         String[] args = {
-            "--custom.property.one=Value1",
-            "-Dcustom.property.two=Value2",
-            "--custom.property.three=Value3"
+            "--custom.property.one=Value1", "-Dcustom.property.two=Value2", "--custom.property.three=Value3"
         };
         Properties propsWithCli = new Properties("properties/test-props.properties", args);
         assertEquals("Value1", propsWithCli.getStringProperty("custom.property.one"));
@@ -122,8 +115,8 @@ class PropertiesTest {
         String[] args = {};
         Properties propsWithCli = new Properties("properties/test-props.properties", args);
         // Property not in file, CLI, or env should throw exception
-        assertThrows(IllegalArgumentException.class,
-            () -> propsWithCli.getStringProperty("totally.undefined.property"));
+        assertThrows(
+                IllegalArgumentException.class, () -> propsWithCli.getStringProperty("totally.undefined.property"));
     }
 
     @Test

@@ -1,7 +1,6 @@
 package group.gnometrading.collections;
 
 import group.gnometrading.utils.Resettable;
-
 import java.util.Collection;
 
 public interface LongMap<T> extends Resettable {

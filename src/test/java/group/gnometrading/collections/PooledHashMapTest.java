@@ -1,13 +1,12 @@
 package group.gnometrading.collections;
 
+import static org.junit.jupiter.api.Assertions.*;
+
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import java.util.stream.Stream;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 class PooledHashMapTest {
 
@@ -16,8 +15,7 @@ class PooledHashMapTest {
                 Arguments.of("1:1,5:1,3:1,10:1", "1", "1"),
                 Arguments.of("1:1,5:1,3:1,10:1", "0", null),
                 Arguments.of("-1:1,-5:1,3:1,10:1", "-5", "1"),
-                Arguments.of("-5:1,-5:10", "-5", "10")
-        );
+                Arguments.of("-5:1,-5:10", "-5", "10"));
     }
 
     @ParameterizedTest
@@ -30,8 +28,7 @@ class PooledHashMapTest {
         return Stream.of(
                 Arguments.of("1:1", "1", ""),
                 Arguments.of("1:1", "0", "1:1"),
-                Arguments.of("1:1,2:1,3:1", "2", "1:1,3:1")
-        );
+                Arguments.of("1:1,2:1,3:1", "2", "1:1,3:1"));
     }
 
     @ParameterizedTest
@@ -66,7 +63,6 @@ class PooledHashMapTest {
         assertEquals((1 << 10), map.size());
     }
 
-
     @Test
     void testClear() {
         var map = new PooledHashMap<String, String>(1);
@@ -93,5 +89,4 @@ class PooledHashMapTest {
         }
         return map;
     }
-
 }

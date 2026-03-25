@@ -1,13 +1,13 @@
 package group.gnometrading.strings;
 
 public interface GnomeString extends Comparable<GnomeString> {
-    boolean equalsIgnoreCase(final String other);
+    boolean equalsIgnoreCase(String other);
 
-    boolean equalsIgnoreCase(final GnomeString other);
+    boolean equalsIgnoreCase(GnomeString other);
 
-    boolean equals(final String other);
+    boolean equals(String other);
 
-    boolean equals(final GnomeString other);
+    boolean equals(GnomeString other);
 
     int length();
 
@@ -15,13 +15,13 @@ public interface GnomeString extends Comparable<GnomeString> {
 
     int offset();
 
-    byte byteAt(final int index);
+    byte byteAt(int index);
 
     byte[] getBytes();
 
-    void copyBytes(final byte[] dest);
+    void copyBytes(byte[] dest);
 
     int toInt();
 
-    long toFixedPointLong(final long scalingFactor);
+    long toFixedPointLong(long scalingFactor);
 }

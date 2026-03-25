@@ -4,7 +4,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicLongArray;
 import java.util.function.Supplier;
 
-public class OneToOneRingBuffer<T> implements RingBuffer<T> {
+public final class OneToOneRingBuffer<T> implements RingBuffer<T> {
 
     private final T[] buffer;
     private final int capacity;

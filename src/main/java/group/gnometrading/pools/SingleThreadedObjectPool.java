@@ -1,10 +1,9 @@
 package group.gnometrading.pools;
 
 import group.gnometrading.annotations.VisibleForTesting;
-
 import java.util.function.Supplier;
 
-public class SingleThreadedObjectPool<T> implements Pool<T> {
+public final class SingleThreadedObjectPool<T> implements Pool<T> {
 
     private static final int DEFAULT_CAPACITY = 50;
 
@@ -40,7 +39,8 @@ public class SingleThreadedObjectPool<T> implements Pool<T> {
         try {
             return clazz.getDeclaredConstructor().newInstance();
         } catch (Exception e) {
-            throw new RuntimeException("Class " + clazz.getSimpleName() + " needs a default constructor for a pool.", e);
+            throw new RuntimeException(
+                    "Class " + clazz.getSimpleName() + " needs a default constructor for a pool.", e);
         }
     }
 
@@ -85,7 +85,8 @@ public class SingleThreadedObjectPool<T> implements Pool<T> {
     }
 
     private static class PoolNodeImpl<T> implements PoolNode<T> {
-        PoolNodeImpl<T> next, prev = null;
+        PoolNodeImpl<T> next;
+        PoolNodeImpl<T> prev = null;
 
         T item = null;
 

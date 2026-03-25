@@ -1,17 +1,26 @@
 package group.gnometrading.utils;
 
+import static group.gnometrading.utils.AsciiEncoding.ASCII_DIGITS;
+import static group.gnometrading.utils.AsciiEncoding.LONG_POW_10;
+import static group.gnometrading.utils.AsciiEncoding.MIN_INTEGER_VALUE;
+import static group.gnometrading.utils.AsciiEncoding.MIN_LONG_VALUE;
+import static group.gnometrading.utils.AsciiEncoding.ZERO;
+import static group.gnometrading.utils.AsciiEncoding.digitCount;
+
 import group.gnometrading.strings.GnomeString;
+import java.nio.ByteBuffer;
 import org.agrona.BufferUtil;
 import org.agrona.concurrent.UnsafeBuffer;
-
-import java.nio.ByteBuffer;
-
-import static group.gnometrading.utils.AsciiEncoding.*;
 
 public final class ByteBufferUtils {
 
     private static final int CACHE_LINE_SIZE = 64;
     private static final int ALIGNMENT_MASK = CACHE_LINE_SIZE - 1;
+    private static final int EIGHT_DIGITS = 100_000_000;
+    private static final int FOUR_DIGITS = 10_000;
+    private static final int TWO_DIGITS = 100;
+    private static final int DIGIT_GROUP_WIDTH_8 = 8;
+    private static final int DIGIT_GROUP_WIDTH_4 = 4;
 
     private ByteBufferUtils() {}
 
@@ -180,7 +189,8 @@ public final class ByteBufferUtils {
             return 1;
         }
 
-        final int digitCount, length;
+        final int digitCount;
+        final int length;
         long quotient = value;
         if (value < 0) {
             if (value == Long.MIN_VALUE) {
@@ -193,7 +203,8 @@ public final class ByteBufferUtils {
             digitCount = digitCount(quotient);
             length = 1 + digitCount;
         } else {
-            length = digitCount = digitCount(quotient);
+            digitCount = digitCount(quotient);
+            length = digitCount;
         }
 
         putPositiveLongAscii(buffer, quotient, digitCount);
@@ -203,33 +214,32 @@ public final class ByteBufferUtils {
     private static void putPositiveLongAscii(final ByteBuffer buffer, final long value, int digitCount) {
         long quotient = value;
         int offset = buffer.position();
-        int i = digitCount;
-        while (quotient >= 100_000_000)
-        {
-            final int lastEightDigits = (int)(quotient % 100_000_000);
-            quotient /= 100_000_000;
+        int digitIdx = digitCount;
+        while (quotient >= EIGHT_DIGITS) {
+            final int lastEightDigits = (int) (quotient % EIGHT_DIGITS);
+            quotient /= EIGHT_DIGITS;
 
-            final int upperPart = lastEightDigits / 10_000;
-            final int lowerPart = lastEightDigits % 10_000;
+            final int upperPart = lastEightDigits / FOUR_DIGITS;
+            final int lowerPart = lastEightDigits % FOUR_DIGITS;
 
-            final int u1 = (upperPart / 100) << 1;
-            final int u2 = (upperPart % 100) << 1;
-            final int l1 = (lowerPart / 100) << 1;
-            final int l2 = (lowerPart % 100) << 1;
+            final int u1 = (upperPart / TWO_DIGITS) << 1;
+            final int u2 = (upperPart % TWO_DIGITS) << 1;
+            final int l1 = (lowerPart / TWO_DIGITS) << 1;
+            final int l2 = (lowerPart % TWO_DIGITS) << 1;
 
-            i -= 8;
+            digitIdx -= DIGIT_GROUP_WIDTH_8;
 
-            buffer.put(offset + i, ASCII_DIGITS[u1]);
-            buffer.put(offset + i + 1, ASCII_DIGITS[u1 + 1]);
-            buffer.put(offset + i + 2, ASCII_DIGITS[u2]);
-            buffer.put(offset + i + 3, ASCII_DIGITS[u2 + 1]);
-            buffer.put(offset + i + 4, ASCII_DIGITS[l1]);
-            buffer.put(offset + i + 5, ASCII_DIGITS[l1 + 1]);
-            buffer.put(offset + i + 6, ASCII_DIGITS[l2]);
-            buffer.put(offset + i + 7, ASCII_DIGITS[l2 + 1]);
+            buffer.put(offset + digitIdx, ASCII_DIGITS[u1]);
+            buffer.put(offset + digitIdx + 1, ASCII_DIGITS[u1 + 1]);
+            buffer.put(offset + digitIdx + 2, ASCII_DIGITS[u2]);
+            buffer.put(offset + digitIdx + 3, ASCII_DIGITS[u2 + 1]);
+            buffer.put(offset + digitIdx + 4, ASCII_DIGITS[l1]);
+            buffer.put(offset + digitIdx + 5, ASCII_DIGITS[l1 + 1]);
+            buffer.put(offset + digitIdx + 6, ASCII_DIGITS[l2]);
+            buffer.put(offset + digitIdx + 7, ASCII_DIGITS[l2 + 1]);
         }
 
-        putPositiveIntAscii(buffer, (int) quotient, i);
+        putPositiveIntAscii(buffer, (int) quotient, digitIdx);
         buffer.position(offset + digitCount);
     }
 
@@ -239,7 +249,8 @@ public final class ByteBufferUtils {
             return 1;
         }
 
-        final int digitCount, length;
+        final int digitCount;
+        final int length;
         int quotient = value;
 
         if (value < 0) {
@@ -252,7 +263,8 @@ public final class ByteBufferUtils {
             digitCount = digitCount(quotient);
             length = digitCount + 1;
         } else {
-            length = digitCount = digitCount(quotient);
+            digitCount = digitCount(quotient);
+            length = digitCount;
         }
 
         putPositiveIntAscii(buffer, quotient, digitCount);
@@ -296,31 +308,30 @@ public final class ByteBufferUtils {
         return digits;
     }
 
-
     private static void putPositiveIntAscii(final byte[] buffer, final int offset, final int value, final int digits) {
         int quotient = value;
-        int idx = digits;
+        int digitIdx = digits;
 
-        while (quotient >= 10_000) {
-            final int lastFourDigits = quotient % 10_000;
-            quotient /= 10_000;
+        while (quotient >= FOUR_DIGITS) {
+            final int lastFourDigits = quotient % FOUR_DIGITS;
+            quotient /= FOUR_DIGITS;
 
-            final int p1 = (lastFourDigits / 100) << 1;
-            final int p2 = (lastFourDigits % 100) << 1;
+            final int p1 = (lastFourDigits / TWO_DIGITS) << 1;
+            final int p2 = (lastFourDigits % TWO_DIGITS) << 1;
 
-            idx -= 4;
+            digitIdx -= DIGIT_GROUP_WIDTH_4;
 
-            buffer[offset + idx] = ASCII_DIGITS[p1];
-            buffer[offset + idx + 1] = ASCII_DIGITS[p1 + 1];
-            buffer[offset + idx + 2] = ASCII_DIGITS[p2];
-            buffer[offset + idx + 3] = ASCII_DIGITS[p2 + 1];
+            buffer[offset + digitIdx] = ASCII_DIGITS[p1];
+            buffer[offset + digitIdx + 1] = ASCII_DIGITS[p1 + 1];
+            buffer[offset + digitIdx + 2] = ASCII_DIGITS[p2];
+            buffer[offset + digitIdx + 3] = ASCII_DIGITS[p2 + 1];
         }
 
-        if (quotient >= 100) {
-            final int position = (quotient % 100) << 1;
-            quotient /= 100;
-            buffer[offset + idx - 1] = ASCII_DIGITS[position + 1];
-            buffer[offset + idx - 2] = ASCII_DIGITS[position];
+        if (quotient >= TWO_DIGITS) {
+            final int position = (quotient % TWO_DIGITS) << 1;
+            quotient /= TWO_DIGITS;
+            buffer[offset + digitIdx - 1] = ASCII_DIGITS[position + 1];
+            buffer[offset + digitIdx - 2] = ASCII_DIGITS[position];
         }
 
         if (quotient >= 10) {
@@ -335,28 +346,28 @@ public final class ByteBufferUtils {
     private static void putPositiveIntAscii(final ByteBuffer buffer, final int value, final int digits) {
         int quotient = value;
         int offset = buffer.position();
-        int idx = digits;
+        int digitIdx = digits;
 
-        while (quotient >= 10_000) {
-            final int lastFourDigits = quotient % 10_000;
-            quotient /= 10_000;
+        while (quotient >= FOUR_DIGITS) {
+            final int lastFourDigits = quotient % FOUR_DIGITS;
+            quotient /= FOUR_DIGITS;
 
-            final int p1 = (lastFourDigits / 100) << 1;
-            final int p2 = (lastFourDigits % 100) << 1;
+            final int p1 = (lastFourDigits / TWO_DIGITS) << 1;
+            final int p2 = (lastFourDigits % TWO_DIGITS) << 1;
 
-            idx -= 4;
+            digitIdx -= DIGIT_GROUP_WIDTH_4;
 
-            buffer.put(offset + idx, ASCII_DIGITS[p1]);
-            buffer.put(offset + idx + 1, ASCII_DIGITS[p1 + 1]);
-            buffer.put(offset + idx + 2, ASCII_DIGITS[p2]);
-            buffer.put(offset + idx + 3, ASCII_DIGITS[p2 + 1]);
+            buffer.put(offset + digitIdx, ASCII_DIGITS[p1]);
+            buffer.put(offset + digitIdx + 1, ASCII_DIGITS[p1 + 1]);
+            buffer.put(offset + digitIdx + 2, ASCII_DIGITS[p2]);
+            buffer.put(offset + digitIdx + 3, ASCII_DIGITS[p2 + 1]);
         }
 
-        if (quotient >= 100) {
-            final int position = (quotient % 100) << 1;
-            quotient /= 100;
-            buffer.put(offset + idx - 1, ASCII_DIGITS[position + 1]);
-            buffer.put(offset + idx - 2, ASCII_DIGITS[position]);
+        if (quotient >= TWO_DIGITS) {
+            final int position = (quotient % TWO_DIGITS) << 1;
+            quotient /= TWO_DIGITS;
+            buffer.put(offset + digitIdx - 1, ASCII_DIGITS[position + 1]);
+            buffer.put(offset + digitIdx - 2, ASCII_DIGITS[position]);
         }
 
         if (quotient >= 10) {
@@ -369,5 +380,4 @@ public final class ByteBufferUtils {
 
         buffer.position(offset + digits);
     }
-
 }

@@ -24,12 +24,13 @@ public class MutableString extends ViewString {
         super(other);
     }
 
-    public void reset() {
+    public final void reset() {
         length = 0;
         hash = 0;
         offset = 0;
     }
 
+    @SuppressWarnings("checkstyle:DesignForExtension")
     public void copy(final GnomeString other) {
         reset();
         if (other != null) {
@@ -38,17 +39,19 @@ public class MutableString extends ViewString {
         }
     }
 
-    public void setLength(final int length) {
+    public final void setLength(final int length) {
         hash = 0;
         this.length = length;
     }
 
-    public MutableString append(final byte b) {
+    @SuppressWarnings("checkstyle:DesignForExtension")
+    public MutableString append(final byte value) {
         hash = 0;
-        this.bytes[this.offset + this.length++] = b;
+        this.bytes[this.offset + this.length++] = value;
         return this;
     }
 
+    @SuppressWarnings("checkstyle:DesignForExtension")
     public MutableString appendString(final String other) {
         hash = 0;
         ArrayCopy.arraycopy(other.getBytes(), 0, this.bytes, this.length + this.offset, other.length());
@@ -56,6 +59,7 @@ public class MutableString extends ViewString {
         return this;
     }
 
+    @SuppressWarnings("checkstyle:DesignForExtension")
     public MutableString appendString(final GnomeString other) {
         hash = 0;
         ArrayCopy.arraycopy(other.getBytes(), other.offset(), this.bytes, this.length + this.offset, other.length());
@@ -63,9 +67,10 @@ public class MutableString extends ViewString {
         return this;
     }
 
-    public MutableString appendNaturalIntAscii(final int i) {
+    @SuppressWarnings("checkstyle:DesignForExtension")
+    public MutableString appendNaturalIntAscii(final int value) {
         hash = 0;
-        int digits = ByteBufferUtils.putNaturalIntAscii(this.bytes, this.offset + this.length, i);
+        int digits = ByteBufferUtils.putNaturalIntAscii(this.bytes, this.offset + this.length, value);
         this.length += digits;
         return this;
     }

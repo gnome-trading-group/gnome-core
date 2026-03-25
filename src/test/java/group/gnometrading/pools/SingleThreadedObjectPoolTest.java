@@ -1,8 +1,8 @@
 package group.gnometrading.pools;
 
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.*;
+
+import org.junit.jupiter.api.Test;
 
 class SingleThreadedObjectPoolTest {
 
@@ -53,5 +53,4 @@ class SingleThreadedObjectPoolTest {
     static class Holder {
         int value = 0;
     }
-
 }

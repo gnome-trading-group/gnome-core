@@ -1,11 +1,15 @@
 package group.gnometrading.resources;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.MissingResourceException;
 
-public class LibraryLoader {
+public final class LibraryLoader {
+
+    private LibraryLoader() {}
 
     /**
      * Loads a native shared library. Attempts to load the library via System#loadLibrary
@@ -21,7 +25,8 @@ public class LibraryLoader {
             final String filename = System.mapLibraryName(name);
             final InputStream in = LibraryLoader.class.getClassLoader().getResourceAsStream(filename);
             if (in == null) {
-                throw new MissingResourceException("Cannot get resource native resource: " + filename, LibraryLoader.class.getName(), filename);
+                throw new MissingResourceException(
+                        "Cannot get resource native resource: " + filename, LibraryLoader.class.getName(), filename);
             }
             final int pos = filename.lastIndexOf('.');
             final File file = File.createTempFile(filename.substring(0, pos), filename.substring(pos));

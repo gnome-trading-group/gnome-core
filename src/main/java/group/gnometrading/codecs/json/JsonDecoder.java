@@ -6,44 +6,44 @@ import group.gnometrading.pools.SingleThreadedObjectPool;
 import group.gnometrading.strings.ExpandingMutableString;
 import group.gnometrading.strings.GnomeString;
 import group.gnometrading.strings.MutableString;
-
 import java.nio.ByteBuffer;
 
 /**
- * JSONDecoder is used to walk a JSON tree. This can *only* be used sequentially to walk the path of a JSON tree.
+ * JsonDecoder is used to walk a JSON tree. This can *only* be used sequentially to walk the path of a JSON tree.
  */
-public class JSONDecoder {
+public final class JsonDecoder {
 
     private static final byte CH_SPACE = ' ';
     private static final byte CH_LINEFEED = '\n';
     private static final byte CH_TAB = '\t';
     private static final byte CH_CARRIAGE_RETURN = '\r';
     private static final int DEFAULT_NODES = 100;
+    private static final int DEFAULT_NODE_CAPACITY = 200;
     private static final byte NULL_BYTE = 0;
 
-    private final Pool<JSONNode> jsonNodePool;
+    private final Pool<JsonNode> jsonNodePool;
     private ByteBuffer byteBuffer;
 
-    public JSONDecoder() {
+    public JsonDecoder() {
         this(DEFAULT_NODES);
     }
 
-    public JSONDecoder(int defaultCapacity) {
-        this.jsonNodePool = new SingleThreadedObjectPool<>(JSONNode::new, defaultCapacity);
+    public JsonDecoder(int defaultCapacity) {
+        this.jsonNodePool = new SingleThreadedObjectPool<>(JsonNode::new, defaultCapacity);
     }
 
-    public JSONNode wrap(final ByteBuffer buffer) {
-        this.byteBuffer = buffer;
+    public JsonNode wrap(final ByteBuffer newByteBuffer) {
+        this.byteBuffer = newByteBuffer;
         return consumeNode();
     }
 
-    private JSONNode consumeNode() {
+    private JsonNode consumeNode() {
         return consumeNode(NULL_BYTE);
     }
 
-    private JSONNode consumeNode(final byte closing) {
-        final PoolNode<JSONNode> poolNode = jsonNodePool.acquire();
-        final JSONNode node = poolNode.getItem();
+    private JsonNode consumeNode(final byte closing) {
+        final PoolNode<JsonNode> poolNode = jsonNodePool.acquire();
+        final JsonNode node = poolNode.getItem();
         node.wrap(this.byteBuffer, poolNode, closing);
         return node;
     }
@@ -71,14 +71,14 @@ public class JSONDecoder {
         }
     }
 
-    private boolean isWhitespace(final byte b) {
-        return b == CH_SPACE || b == CH_TAB || b == CH_LINEFEED || b == CH_CARRIAGE_RETURN;
+    private boolean isWhitespace(final byte value) {
+        return value == CH_SPACE || value == CH_TAB || value == CH_LINEFEED || value == CH_CARRIAGE_RETURN;
     }
 
     private void consume(final byte target) {
         while (byteBuffer.hasRemaining()) {
-            final byte b = byteBuffer.get();
-            if (b == target) {
+            final byte at = byteBuffer.get();
+            if (at == target) {
                 return;
             }
         }
@@ -86,16 +86,16 @@ public class JSONDecoder {
 
     private void consumeRecursively(final byte target) {
         while (byteBuffer.hasRemaining()) {
-            final byte b = byteBuffer.get();
-            if (b == target) {
+            final byte at = byteBuffer.get();
+            if (at == target) {
                 return;
             }
 
-            if (b == '[') {
+            if (at == '[') {
                 consumeRecursively((byte) ']');
-            } else if (b == '{') {
+            } else if (at == '{') {
                 consumeRecursively((byte) '}');
-            } else if (b == '\\') {
+            } else if (at == '\\') {
                 if (byteBuffer.hasRemaining() && byteBuffer.get(byteBuffer.position()) == target) {
                     byteBuffer.get();
                 }
@@ -103,29 +103,29 @@ public class JSONDecoder {
         }
     }
 
-    public class JSONNode implements AutoCloseable {
+    public final class JsonNode implements AutoCloseable {
         private final MutableString name;
         private final ExpandingMutableString value;
-        private final JSONArray jsonArray;
-        private final JSONObject jsonObject;
+        private final JsonObject jsonObject;
+        private final JsonArray jsonArray;
 
         private ByteBuffer byteBuffer;
-        private PoolNode<JSONNode> parent;
+        private PoolNode<JsonNode> parent;
         private byte closing;
 
-        public JSONNode() {
-            this.name = new MutableString(200); // Over 200 byte key, I quit
-            this.value = new ExpandingMutableString(200); // TODO: Profile this? Store this somewhere?
-            this.jsonObject = new JSONObject();
-            this.jsonArray = new JSONArray();
+        public JsonNode() {
+            this.name = new MutableString(DEFAULT_NODE_CAPACITY); // Over 200 byte key, I quit
+            this.value = new ExpandingMutableString(DEFAULT_NODE_CAPACITY); // TODO: Profile this? Store this somewhere?
+            this.jsonObject = new JsonObject();
+            this.jsonArray = new JsonArray();
         }
 
-        public void wrap(final ByteBuffer byteBuffer, final PoolNode<JSONNode> parent, final byte closing) {
+        public void wrap(final ByteBuffer newByteBuffer, final PoolNode<JsonNode> newParent, final byte newClosing) {
             this.name.reset();
             this.value.reset();
-            this.byteBuffer = byteBuffer;
-            this.parent = parent;
-            this.closing = closing;
+            this.byteBuffer = newByteBuffer;
+            this.parent = newParent;
+            this.closing = newClosing;
         }
 
         @Override
@@ -148,12 +148,12 @@ public class JSONDecoder {
                 byteBuffer.get();
             }
 
-            int value = 0;
+            int result = 0;
             while (byteBuffer.hasRemaining() && isNumber(byteBuffer.get(byteBuffer.position()))) {
                 byte at = byteBuffer.get();
-                value = 10 * value + at - '0';
+                result = 10 * result + at - '0';
             }
-            return sign ? -value : value;
+            return sign ? -result : result;
         }
 
         public long asFixedPointLong(final long scalingFactor) {
@@ -164,10 +164,10 @@ public class JSONDecoder {
                 byteBuffer.get();
             }
 
-            long value = 0;
+            long result = 0;
             while (byteBuffer.hasRemaining() && isNumber(byteBuffer.get(byteBuffer.position()))) {
                 final byte at = byteBuffer.get();
-                value = 10 * value + (at - '0') * scalingFactor;
+                result = 10 * result + (at - '0') * scalingFactor;
             }
 
             if (byteBuffer.hasRemaining() && byteBuffer.get(byteBuffer.position()) == '.') {
@@ -176,11 +176,11 @@ public class JSONDecoder {
                 while (byteBuffer.hasRemaining() && isNumber(byteBuffer.get(byteBuffer.position()))) {
                     fractionalMultiplier /= 10;
                     final byte at = byteBuffer.get();
-                    value += (at - '0') * fractionalMultiplier;
+                    result += (at - '0') * fractionalMultiplier;
                 }
             }
 
-            return sign ? -value : value;
+            return sign ? -result : result;
         }
 
         public long asLong() {
@@ -191,13 +191,13 @@ public class JSONDecoder {
                 byteBuffer.get();
             }
 
-            long value = 0;
+            long result = 0;
             while (byteBuffer.remaining() > 0 && isNumber(byteBuffer.get(byteBuffer.position()))) {
                 final byte at = byteBuffer.get();
-                value = 10 * value + at - '0';
+                result = 10 * result + at - '0';
             }
 
-            return sign ? -value : value;
+            return sign ? -result : result;
         }
 
         public double asDouble() {
@@ -209,10 +209,10 @@ public class JSONDecoder {
                 byteBuffer.get();
             }
 
-            int value = 0;
+            int result = 0;
             while (byteBuffer.hasRemaining() && isNumber(byteBuffer.get(byteBuffer.position()))) {
                 byte at = byteBuffer.get();
-                value = 10 * value + at - '0';
+                result = 10 * result + at - '0';
             }
 
             double remainder = 0;
@@ -226,11 +226,11 @@ public class JSONDecoder {
                 }
             }
 
-            return sign ? -(value + remainder) : value + remainder;
+            return sign ? -(result + remainder) : result + remainder;
         }
 
-        private boolean isNumber(final byte b) {
-            return b >= '0' && b <= '9';
+        private boolean isNumber(final byte byteValue) {
+            return byteValue >= '0' && byteValue <= '9';
         }
 
         public GnomeString asString() {
@@ -247,12 +247,12 @@ public class JSONDecoder {
             return this.value;
         }
 
-        public JSONObject asObject() {
+        public JsonObject asObject() {
             jsonObject.wrap(byteBuffer);
             return jsonObject;
         }
 
-        public JSONArray asArray() {
+        public JsonArray asArray() {
             jsonArray.wrap(byteBuffer);
             return jsonArray;
         }
@@ -264,19 +264,19 @@ public class JSONDecoder {
 
         public boolean isNull() {
             consumeWhitespace();
-            return byteBuffer.get(byteBuffer.position()) == 'n' &&
-                    byteBuffer.get(byteBuffer.position() + 1) == 'u' &&
-                    byteBuffer.get(byteBuffer.position() + 2) == 'l' &&
-                    byteBuffer.get(byteBuffer.position() + 3) == 'l';
+            return byteBuffer.get(byteBuffer.position()) == 'n'
+                    && byteBuffer.get(byteBuffer.position() + 1) == 'u'
+                    && byteBuffer.get(byteBuffer.position() + 2) == 'l'
+                    && byteBuffer.get(byteBuffer.position() + 3) == 'l';
         }
     }
 
-    public class JSONObject implements AutoCloseable {
+    public final class JsonObject implements AutoCloseable {
 
         private ByteBuffer byteBuffer;
 
-        public void wrap(final ByteBuffer byteBuffer) {
-            this.byteBuffer = byteBuffer;
+        public void wrap(final ByteBuffer newByteBuffer) {
+            this.byteBuffer = newByteBuffer;
             consume((byte) '{');
         }
 
@@ -285,15 +285,15 @@ public class JSONDecoder {
             return byteBuffer.get(byteBuffer.position()) != '}';
         }
 
-        public JSONNode nextKey() {
-            final JSONNode node = consumeNode((byte) '}');
+        public JsonNode nextKey() {
+            final JsonNode node = consumeNode((byte) '}');
             consume((byte) '"');
             while (true) {
-                final byte b = byteBuffer.get();
-                if (b == '"') {
+                final byte at = byteBuffer.get();
+                if (at == '"') {
                     break;
                 } else {
-                    node.name.append(b);
+                    node.name.append(at);
                 }
             }
             consume((byte) ':');
@@ -307,16 +307,16 @@ public class JSONDecoder {
         }
     }
 
-    public class JSONArray implements AutoCloseable {
+    public final class JsonArray implements AutoCloseable {
 
         private ByteBuffer byteBuffer;
 
-        public void wrap(final ByteBuffer byteBuffer) {
-            this.byteBuffer = byteBuffer;
+        public void wrap(final ByteBuffer newByteBuffer) {
+            this.byteBuffer = newByteBuffer;
             consume((byte) '[');
         }
 
-        public JSONNode nextItem() {
+        public JsonNode nextItem() {
             consumeWhitespace();
             return consumeNode((byte) ']');
         }

@@ -2,7 +2,6 @@ package group.gnometrading.resources;
 
 import group.gnometrading.collections.GnomeMap;
 import group.gnometrading.collections.PooledHashMap;
-
 import java.io.IOException;
 
 /**
@@ -15,7 +14,7 @@ import java.io.IOException;
  * 2. Environment variables
  * 3. Properties file (lowest priority)
  */
-public class Properties {
+public final class Properties {
 
     private final String resourcePath;
     private final java.util.Properties internalProps;
@@ -135,9 +134,10 @@ public class Properties {
     }
 
     private void ensureValidProperty(final String key) {
-        if (!this.internalProps.containsKey(key) && !this.envOverrides.containsKey(key) && !this.cliOverrides.containsKey(key)) {
+        if (!this.internalProps.containsKey(key)
+                && !this.envOverrides.containsKey(key)
+                && !this.cliOverrides.containsKey(key)) {
             throw new IllegalArgumentException("Invalid property: " + key);
         }
     }
-
 }

@@ -2,5 +2,5 @@ package group.gnometrading.concurrent;
 
 @FunctionalInterface
 public interface ErrorHandler {
-    void onError(Throwable t);
+    void onError(Throwable throwable);
 }

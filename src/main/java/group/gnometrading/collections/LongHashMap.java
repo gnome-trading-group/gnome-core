@@ -3,18 +3,20 @@ package group.gnometrading.collections;
 import group.gnometrading.pools.Pool;
 import group.gnometrading.pools.PoolNode;
 import group.gnometrading.pools.SingleThreadedObjectPool;
-
 import java.util.Collection;
 import java.util.HashSet;
 
 /**
- * Single-threaded int map to avoid boxing.
- * @param <T>
+ * Single-threaded long map to avoid boxing.
+ *
+ * @param <T> the value type stored in this map
  */
-public class LongHashMap<T> implements LongMap<T> {
+public final class LongHashMap<T> implements LongMap<T> {
     static final int MAX_CAPACITY = 1 << 30;
     static final float DEFAULT_LOAD_FACTOR = 0.75f;
     static final int DEFAULT_CAPACITY = 1 << 7;
+    private static final int DEFAULT_NODE_POOL_CAPACITY = 100;
+    private static final int LONG_KEY_SHIFT = 32;
 
     private final Pool<Node<T>> nodePool;
     private final float loadFactor;
@@ -31,10 +33,13 @@ public class LongHashMap<T> implements LongMap<T> {
     }
 
     public LongHashMap(int initialCapacity, float loadFactor) {
-        this.nodePool = new SingleThreadedObjectPool<Node<T>>(() -> new Node(), 100); // TODO: Good number here for capacity?
+        this.nodePool = new SingleThreadedObjectPool<Node<T>>(
+                () -> new Node(), DEFAULT_NODE_POOL_CAPACITY); // TODO: Good number here for capacity?
 
         int capacity = 1;
-        while(capacity < initialCapacity) capacity <<= 1;
+        while (capacity < initialCapacity) {
+            capacity <<= 1;
+        }
 
         this.loadFactor = loadFactor;
         this.count = 0;
@@ -143,19 +148,21 @@ public class LongHashMap<T> implements LongMap<T> {
     }
 
     @Override
+    @SuppressWarnings("checkstyle:IllegalType")
     public Collection<Long> keys() {
-        Collection<Long> keys = new HashSet<>( size() );
-        for (var node : this.hashTable) {
-            while (node != null) {
-                keys.add(node.key);
-                node = node.next;
+        Collection<Long> keys = new HashSet<>(size());
+        for (int idx = 0; idx < this.hashTable.length; idx++) {
+            Node<T> current = this.hashTable[idx];
+            while (current != null) {
+                keys.add(current.key);
+                current = current.next;
             }
         }
         return keys;
     }
 
-    private void setTable(Node<T>[] hashTable) {
-        this.hashTable = hashTable;
+    private void setTable(Node<T>[] newHashTable) {
+        this.hashTable = newHashTable;
         this.loadThreshold = (int) (this.hashTable.length * this.loadFactor);
     }
 
@@ -167,8 +174,11 @@ public class LongHashMap<T> implements LongMap<T> {
         }
 
         final Node<T>[] newTable = Node.createArray(oldTable.length << 1);
-        for (Node<T> node : oldTable) {
-            if (node == null) continue;
+        for (int tableIdx = 0; tableIdx < oldTable.length; tableIdx++) {
+            Node<T> node = oldTable[tableIdx];
+            if (node == null) {
+                continue;
+            }
 
             do {
                 var next = node.next;
@@ -195,7 +205,7 @@ public class LongHashMap<T> implements LongMap<T> {
     }
 
     private static int hash(final long key) {
-        return (int) (key ^ (key >>> 32));
+        return (int) (key ^ (key >>> LONG_KEY_SHIFT));
     }
 
     private static class Node<T> {

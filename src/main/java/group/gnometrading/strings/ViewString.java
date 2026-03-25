@@ -5,6 +5,7 @@ import group.gnometrading.utils.ArrayCopy;
 public class ViewString implements GnomeString {
 
     private static final byte[] NULL_BUF = new byte[1];
+    private static final byte CASE_DIFF = 0x20;
 
     protected int hash;
     protected int length;
@@ -39,10 +40,14 @@ public class ViewString implements GnomeString {
     }
 
     @Override
-    public boolean equalsIgnoreCase(final String other) {
-        if (other == null) return false;
+    public final boolean equalsIgnoreCase(final String other) {
+        if (other == null) {
+            return false;
+        }
 
-        if (length != other.length()) return false;
+        if (length != other.length()) {
+            return false;
+        }
 
         int localIdx = offset;
         for (int i = 0; i < length; i++) {
@@ -50,9 +55,9 @@ public class ViewString implements GnomeString {
             byte b2 = (byte) other.charAt(i);
 
             if (b1 != b2) {
-                if ((0x20 + b1) == b2) {
+                if ((CASE_DIFF + b1) == b2) {
                     continue;
-                } else if (b1 == (0x20 + b2)) {
+                } else if (b1 == (CASE_DIFF + b2)) {
                     continue;
                 }
                 return false;
@@ -62,11 +67,17 @@ public class ViewString implements GnomeString {
     }
 
     @Override
-    public boolean equalsIgnoreCase(final GnomeString other) {
-        if (other == this) return true;
-        if (other == null) return false;
+    public final boolean equalsIgnoreCase(final GnomeString other) {
+        if (other == this) {
+            return true;
+        }
+        if (other == null) {
+            return false;
+        }
 
-        if (other.length() != length) return false;
+        if (other.length() != length) {
+            return false;
+        }
 
         int localIdx = offset;
         for (int i = 0; i < length; i++) {
@@ -74,9 +85,9 @@ public class ViewString implements GnomeString {
             byte b2 = other.byteAt(i);
 
             if (b1 != b2) {
-                if ((0x20 + b1) == b2) {
+                if ((CASE_DIFF + b1) == b2) {
                     continue;
-                } else if (b1 == (0x20 + b2)) {
+                } else if (b1 == (CASE_DIFF + b2)) {
                     continue;
                 }
                 return false;
@@ -85,10 +96,16 @@ public class ViewString implements GnomeString {
         return true;
     }
 
-    public boolean equals(final ViewString other) {
-        if (other == null) return false;
-        if (other == this) return true;
-        if (other.length != this.length) return false;
+    public final boolean equals(final ViewString other) {
+        if (other == null) {
+            return false;
+        }
+        if (other == this) {
+            return true;
+        }
+        if (other.length != this.length) {
+            return false;
+        }
 
         for (int i = 0; i < length; i++) {
             if (this.bytes[offset + i] != other.bytes[other.offset + i]) {
@@ -99,9 +116,13 @@ public class ViewString implements GnomeString {
     }
 
     @Override
-    public boolean equals(final String other) {
-        if (other == null) return false;
-        if (other.length() != this.length) return false;
+    public final boolean equals(final String other) {
+        if (other == null) {
+            return false;
+        }
+        if (other.length() != this.length) {
+            return false;
+        }
 
         for (int i = 0; i < length; i++) {
             if (this.bytes[offset + i] != (byte) other.charAt(i)) {
@@ -112,9 +133,13 @@ public class ViewString implements GnomeString {
     }
 
     @Override
-    public boolean equals(final GnomeString other) {
-        if (other == null) return false;
-        if (other.length() != this.length) return false;
+    public final boolean equals(final GnomeString other) {
+        if (other == null) {
+            return false;
+        }
+        if (other.length() != this.length) {
+            return false;
+        }
 
         for (int i = 0; i < length; i++) {
             if (this.bytes[offset + i] != other.byteAt(i)) {
@@ -125,13 +150,19 @@ public class ViewString implements GnomeString {
     }
 
     @Override
-    public boolean equals(final Object other) {
-        if (other == this) return true;
-        if (other == null) return false;
+    public final boolean equals(final Object other) {
+        if (other == this) {
+            return true;
+        }
+        if (other == null) {
+            return false;
+        }
 
         Class<?> otherClass = other.getClass();
 
-        if (otherClass == ViewString.class || otherClass == MutableString.class || otherClass == ExpandingMutableString.class)  {
+        if (otherClass == ViewString.class
+                || otherClass == MutableString.class
+                || otherClass == ExpandingMutableString.class) {
             return equals((ViewString) other);
         } else if (other.getClass() == String.class) {
             return equals((String) other);
@@ -140,27 +171,27 @@ public class ViewString implements GnomeString {
     }
 
     @Override
-    public int length() {
+    public final int length() {
         return length;
     }
 
     @Override
-    public int capacity() {
+    public final int capacity() {
         return bytes.length - offset;
     }
 
     @Override
-    public int offset() {
+    public final int offset() {
         return offset;
     }
 
     @Override
-    public byte byteAt(final int index) {
+    public final byte byteAt(final int index) {
         return this.bytes[this.offset + index];
     }
 
     @Override
-    public int compareTo(final GnomeString gnomeString) {
+    public final int compareTo(final GnomeString gnomeString) {
         int l1 = this.length;
         int l2 = gnomeString.length();
 
@@ -177,29 +208,29 @@ public class ViewString implements GnomeString {
     }
 
     @Override
-    public int hashCode() {
+    public final int hashCode() {
         if (hash == 0) {
-            int h = 0;
+            int hashValue = 0;
             for (int i = 0; i < this.length; i++) {
-                h = 31 * h + this.byteAt(i);
+                hashValue = 31 * hashValue + this.byteAt(i);
             }
-            hash = h;
+            hash = hashValue;
         }
         return hash;
     }
 
     @Override
-    public byte[] getBytes() {
+    public final byte[] getBytes() {
         return this.bytes;
     }
 
     @Override
-    public void copyBytes(final byte[] dest) {
+    public final void copyBytes(final byte[] dest) {
         ArrayCopy.arraycopy(this.bytes, this.offset, dest, 0, this.capacity());
     }
 
     @Override
-    public int toInt() {
+    public final int toInt() {
         if (this.length == 0) {
             throw new NumberFormatException("Empty string");
         }
@@ -221,7 +252,7 @@ public class ViewString implements GnomeString {
     }
 
     @Override
-    public long toFixedPointLong(final long scalingFactor) {
+    public final long toFixedPointLong(final long scalingFactor) {
         if (this.length == 0) {
             throw new NumberFormatException("Empty string");
         }
@@ -255,7 +286,7 @@ public class ViewString implements GnomeString {
     }
 
     @Override
-    public String toString() {
+    public final String toString() {
         return new String(this.bytes, this.offset, this.length);
     }
 }

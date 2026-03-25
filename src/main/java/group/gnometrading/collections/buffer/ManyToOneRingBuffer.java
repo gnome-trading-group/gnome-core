@@ -1,10 +1,10 @@
 package group.gnometrading.collections.buffer;
 
-import java.util.function.Supplier;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicLongArray;
+import java.util.function.Supplier;
 
-public class ManyToOneRingBuffer<T> implements RingBuffer<T> {
+public final class ManyToOneRingBuffer<T> implements RingBuffer<T> {
 
     private final T[] buffer;
     private final int capacity;
@@ -60,8 +60,6 @@ public class ManyToOneRingBuffer<T> implements RingBuffer<T> {
     public void commit(final int index) {
         slotStates.set(index, PUBLISHED);
     }
-
-
 
     @Override
     public void read(final MessageConsumer<T> consumer, final int limit) {

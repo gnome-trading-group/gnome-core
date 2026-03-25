@@ -1,21 +1,20 @@
 package group.gnometrading.codecs.json;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import group.gnometrading.strings.GnomeString;
 import group.gnometrading.strings.MutableString;
 import group.gnometrading.strings.ViewString;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Stream;
-
-import static org.junit.jupiter.api.Assertions.*;
-
-class JSONDecoderTest {
+class JsonDecoderTest {
 
     private static Stream<Arguments> testIntNodesArguments() {
         return Stream.of(
@@ -27,14 +26,15 @@ class JSONDecoderTest {
                 Arguments.of("1001534", 1001534),
                 Arguments.of("10.51", 10),
                 Arguments.of("-10.51", -10),
-                Arguments.of("" + Integer.MAX_VALUE, Integer.MAX_VALUE)
-        );
+                Arguments.of("" + Integer.MAX_VALUE, Integer.MAX_VALUE));
     }
 
     @ParameterizedTest
     @MethodSource("testIntNodesArguments")
     void testIntNodes(String json, int expected) {
-        assertEquals(expected, new JSONDecoder().wrap(ByteBuffer.wrap(json.getBytes())).asInt());
+        assertEquals(
+                expected,
+                new JsonDecoder().wrap(ByteBuffer.wrap(json.getBytes())).asInt());
     }
 
     private static Stream<Arguments> testFixedPointLongNodesArguments() {
@@ -44,14 +44,15 @@ class JSONDecoderTest {
                 Arguments.of("1.1", 1_100, 1_000),
                 Arguments.of("1.1234", 1_123, 1_000),
                 Arguments.of("1234.532", 1234532000, 1_000_000),
-                Arguments.of("-1234.532", -1234532000, 1_000_000)
-        );
+                Arguments.of("-1234.532", -1234532000, 1_000_000));
     }
 
     @ParameterizedTest
     @MethodSource("testFixedPointLongNodesArguments")
     void testFixedPointLongNodes(String json, long expected, long scalingFactor) {
-        assertEquals(expected, new JSONDecoder().wrap(ByteBuffer.wrap(json.getBytes())).asFixedPointLong(scalingFactor));
+        assertEquals(
+                expected,
+                new JsonDecoder().wrap(ByteBuffer.wrap(json.getBytes())).asFixedPointLong(scalingFactor));
     }
 
     private static Stream<Arguments> testLongNodesArguments() {
@@ -65,14 +66,15 @@ class JSONDecoderTest {
                 Arguments.of("10.51", 10),
                 Arguments.of("-10.51", -10),
                 Arguments.of("" + Long.MAX_VALUE, Long.MAX_VALUE),
-                Arguments.of("" + Long.MIN_VALUE, Long.MIN_VALUE)
-        );
+                Arguments.of("" + Long.MIN_VALUE, Long.MIN_VALUE));
     }
 
     @ParameterizedTest
     @MethodSource("testLongNodesArguments")
     void testLongNodes(String json, long expected) {
-        assertEquals(expected, new JSONDecoder().wrap(ByteBuffer.wrap(json.getBytes())).asLong());
+        assertEquals(
+                expected,
+                new JsonDecoder().wrap(ByteBuffer.wrap(json.getBytes())).asLong());
     }
 
     private static Stream<Arguments> testDoubleNodesArguments() {
@@ -82,14 +84,15 @@ class JSONDecoderTest {
                 Arguments.of("1.1", 1.1),
                 Arguments.of("10005.1042314", 10005.1042314),
                 Arguments.of("0.000005", 0.000005),
-                Arguments.of("-0.000005", -0.000005)
-        );
+                Arguments.of("-0.000005", -0.000005));
     }
 
     @ParameterizedTest
     @MethodSource("testDoubleNodesArguments")
     void testDoubleNodes(String json, double expected) {
-        assertEquals(expected, new JSONDecoder().wrap(ByteBuffer.wrap(json.getBytes())).asDouble());
+        assertEquals(
+                expected,
+                new JsonDecoder().wrap(ByteBuffer.wrap(json.getBytes())).asDouble());
     }
 
     private static String largeString(int num) {
@@ -108,19 +111,19 @@ class JSONDecoderTest {
                 Arguments.of("\"of the tragedy\"", new ViewString("of the tragedy")),
                 Arguments.of("\"of Darth Plagueis the Wise?\"", new ViewString("of Darth Plagueis the Wise?")),
                 Arguments.of("\"0.0550\"", new ViewString("0.0550")),
-                Arguments.of("\"" + largeString(500) +"\"", new ViewString(largeString(500)))
-        );
+                Arguments.of("\"" + largeString(500) + "\"", new ViewString(largeString(500))));
     }
 
     @ParameterizedTest
     @MethodSource("testStringNodesArguments")
     void testStringNodes(String json, GnomeString expected) {
-        assertTrue(expected.equals(new JSONDecoder().wrap(ByteBuffer.wrap(json.getBytes())).asString()));
+        assertTrue(expected.equals(
+                new JsonDecoder().wrap(ByteBuffer.wrap(json.getBytes())).asString()));
     }
 
     @Test
     public void testEmptyObjects() {
-        JSONDecoder jsonDecoder = new JSONDecoder();
+        JsonDecoder jsonDecoder = new JsonDecoder();
 
         String payload = "[]";
         var node = jsonDecoder.wrap(ByteBuffer.wrap(payload.getBytes()));
@@ -135,7 +138,7 @@ class JSONDecoderTest {
 
     @Test
     public void testNullValues() {
-        JSONDecoder jsonDecoder = new JSONDecoder();
+        JsonDecoder jsonDecoder = new JsonDecoder();
 
         String payload = "null";
         var node = jsonDecoder.wrap(ByteBuffer.wrap(payload.getBytes()));
@@ -166,7 +169,7 @@ class JSONDecoderTest {
 
     @Test
     public void testBooleanValues() {
-        JSONDecoder jsonDecoder = new JSONDecoder();
+        JsonDecoder jsonDecoder = new JsonDecoder();
 
         String payload = "true";
         var node = jsonDecoder.wrap(ByteBuffer.wrap(payload.getBytes()));
@@ -195,11 +198,12 @@ class JSONDecoderTest {
 
     @Test
     public void testComplexObjects() {
-        String payload = """
+        String payload =
+                """
                 {"hi": true,
                 "myNumbie": 5.0401, "testArray": [1, 2, 3]}
                 """;
-        JSONDecoder jsonDecoder = new JSONDecoder();
+        JsonDecoder jsonDecoder = new JsonDecoder();
         try (final var node = jsonDecoder.wrap(ByteBuffer.wrap(payload.getBytes()))) {
             try (final var obj = node.asObject()) {
                 assertTrue(obj.hasNextKey());
@@ -235,28 +239,29 @@ class JSONDecoderTest {
 
     @Test
     public void testBinanceDump() {
-        String payload = """
+        String payload =
+                """
                         {
                           "e": "depthUpdate",
                           "E": 1672515782136,
                           "s": "BNBBTC",
                           "U": 157,
-                          "u": 160,    
-                          "b": [   
+                          "u": 160,
+                          "b": [
                             [
-                              "0.0024",   
-                              "10"      
+                              "0.0024",
+                              "10"
                             ]
                           ],
-                          "a": [     
+                          "a": [
                             [
-                              "0.0026",  
-                              "100"      
+                              "0.0026",
+                              "100"
                             ]
                           ]
                         }
                 """;
-        JSONDecoder jsonDecoder = new JSONDecoder();
+        JsonDecoder jsonDecoder = new JsonDecoder();
         try (final var node = jsonDecoder.wrap(ByteBuffer.wrap(payload.getBytes()))) {
             try (final var obj = node.asObject()) {
                 List<String> keys = new ArrayList<>();
@@ -290,13 +295,15 @@ class JSONDecoderTest {
 
     @Test
     public void testConsumesNestedObjects() {
-        String payload = """
+        String payload =
+                """
                 {
                     "key": {"child": {"child2": 5, "child3": {}}}, "key2": 10
                 }
                 """;
-        JSONDecoder jsonDecoder = new JSONDecoder();
-        try (final var obj = jsonDecoder.wrap(ByteBuffer.wrap(payload.getBytes())).asObject()) {
+        JsonDecoder jsonDecoder = new JsonDecoder();
+        try (final var obj =
+                jsonDecoder.wrap(ByteBuffer.wrap(payload.getBytes())).asObject()) {
             try (final var key = obj.nextKey()) {
                 // Do nothing with it
             }
@@ -309,14 +316,17 @@ class JSONDecoderTest {
 
     @Test
     public void testSkipsKeyObjects() {
-        String payload = """
+        String payload =
+                """
                 {
                     "key": {"child": {"child2": 5, "child3": {}}, "child2": 50}, "key2": 10
                 }
                 """;
-        JSONDecoder jsonDecoder = new JSONDecoder();
-        try (final var obj = jsonDecoder.wrap(ByteBuffer.wrap(payload.getBytes())).asObject()) {
-            try (final var key = obj.nextKey(); final var keyObj = key.asObject()) {
+        JsonDecoder jsonDecoder = new JsonDecoder();
+        try (final var obj =
+                jsonDecoder.wrap(ByteBuffer.wrap(payload.getBytes())).asObject()) {
+            try (final var key = obj.nextKey();
+                    final var keyObj = key.asObject()) {
                 try (final var ignore = keyObj.nextKey()) {}
 
                 try (final var child2 = keyObj.nextKey()) {
@@ -332,7 +342,8 @@ class JSONDecoderTest {
 
     @Test
     public void testWeirdlyNestedDump() {
-        String payload = """
+        String payload =
+                """
                         {
                           "key": {"hi": [{"hi2": [1]}]},
                           "arr": [[  {"nested": [1]  }] ],
@@ -340,8 +351,9 @@ class JSONDecoderTest {
                           "final": [   null],
                         }
                 """;
-        JSONDecoder jsonDecoder = new JSONDecoder();
-        try (final var obj = jsonDecoder.wrap(ByteBuffer.wrap(payload.getBytes())).asObject()) {
+        JsonDecoder jsonDecoder = new JsonDecoder();
+        try (final var obj =
+                jsonDecoder.wrap(ByteBuffer.wrap(payload.getBytes())).asObject()) {
             while (true) {
                 try (final var key = obj.nextKey()) {
                     if (key.getName().equals("key")) {
@@ -364,8 +376,7 @@ class JSONDecoderTest {
                                 }
                             }
                         }
-                    }
-                    else if (key.getName().equals("final")) {
+                    } else if (key.getName().equals("final")) {
                         try (final var arr = key.asArray()) {
                             assertTrue(arr.nextItem().isNull());
                         }

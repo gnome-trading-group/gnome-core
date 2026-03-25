@@ -1,9 +1,6 @@
 package group.gnometrading.collections.buffer;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.RepeatedTest;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -14,11 +11,13 @@ import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicBoolean;
-
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.RepeatedTest;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class ManyToOneRingBufferTest {
 
@@ -47,11 +46,7 @@ class ManyToOneRingBufferTest {
 
     @Test
     void testConstructor() {
-        ManyToOneRingBuffer<TestMessage> buffer = new ManyToOneRingBuffer<>(
-                TestMessage[]::new,
-                TestMessage::new,
-                8
-        );
+        ManyToOneRingBuffer<TestMessage> buffer = new ManyToOneRingBuffer<>(TestMessage[]::new, TestMessage::new, 8);
 
         assertNotNull(buffer);
     }
@@ -59,38 +54,32 @@ class ManyToOneRingBufferTest {
     @Test
     void testConstructorWithInvalidCapacity() {
         // Not a power of 2
-        assertThrows(IllegalArgumentException.class, () ->
-                new ManyToOneRingBuffer<>(TestMessage[]::new, TestMessage::new, 7)
-        );
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new ManyToOneRingBuffer<>(TestMessage[]::new, TestMessage::new, 7));
 
         // Zero capacity
-        assertThrows(IllegalArgumentException.class, () ->
-                new ManyToOneRingBuffer<>(TestMessage[]::new, TestMessage::new, 0)
-        );
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new ManyToOneRingBuffer<>(TestMessage[]::new, TestMessage::new, 0));
 
         // Negative capacity
-        assertThrows(IllegalArgumentException.class, () ->
-                new ManyToOneRingBuffer<>(TestMessage[]::new, TestMessage::new, -1)
-        );
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new ManyToOneRingBuffer<>(TestMessage[]::new, TestMessage::new, -1));
     }
 
     @ParameterizedTest
     @ValueSource(ints = {1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024})
     void testConstructorWithValidCapacities(int capacity) {
-        assertDoesNotThrow(() ->
-                new ManyToOneRingBuffer<>(TestMessage[]::new, TestMessage::new, capacity)
-        );
+        assertDoesNotThrow(() -> new ManyToOneRingBuffer<>(TestMessage[]::new, TestMessage::new, capacity));
     }
 
     // ========== Single Producer Tests (Baseline) ==========
 
     @Test
     void testSingleProducerTryClaim() {
-        ManyToOneRingBuffer<TestMessage> buffer = new ManyToOneRingBuffer<>(
-                TestMessage[]::new,
-                TestMessage::new,
-                4
-        );
+        ManyToOneRingBuffer<TestMessage> buffer = new ManyToOneRingBuffer<>(TestMessage[]::new, TestMessage::new, 4);
 
         int index = buffer.tryClaim();
         assertTrue(index >= 0 && index < 4);
@@ -98,11 +87,7 @@ class ManyToOneRingBufferTest {
 
     @Test
     void testSingleProducerTryClaimWhenFull() {
-        ManyToOneRingBuffer<TestMessage> buffer = new ManyToOneRingBuffer<>(
-                TestMessage[]::new,
-                TestMessage::new,
-                4
-        );
+        ManyToOneRingBuffer<TestMessage> buffer = new ManyToOneRingBuffer<>(TestMessage[]::new, TestMessage::new, 4);
 
         // Claim all slots
         for (int i = 0; i < 4; i++) {
@@ -116,11 +101,7 @@ class ManyToOneRingBufferTest {
 
     @Test
     void testSingleProducerCommitSingleSlot() {
-        ManyToOneRingBuffer<TestMessage> buffer = new ManyToOneRingBuffer<>(
-                TestMessage[]::new,
-                TestMessage::new,
-                4
-        );
+        ManyToOneRingBuffer<TestMessage> buffer = new ManyToOneRingBuffer<>(TestMessage[]::new, TestMessage::new, 4);
 
         int index = buffer.tryClaim();
         assertDoesNotThrow(() -> buffer.commit(index));
@@ -128,11 +109,7 @@ class ManyToOneRingBufferTest {
 
     @Test
     void testSingleProducerCommitInOrder() {
-        ManyToOneRingBuffer<TestMessage> buffer = new ManyToOneRingBuffer<>(
-                TestMessage[]::new,
-                TestMessage::new,
-                4
-        );
+        ManyToOneRingBuffer<TestMessage> buffer = new ManyToOneRingBuffer<>(TestMessage[]::new, TestMessage::new, 4);
 
         int index0 = buffer.tryClaim();
         int index1 = buffer.tryClaim();
@@ -145,11 +122,7 @@ class ManyToOneRingBufferTest {
 
     @Test
     void testSingleProducerReadEmptyBuffer() {
-        ManyToOneRingBuffer<TestMessage> buffer = new ManyToOneRingBuffer<>(
-                TestMessage[]::new,
-                TestMessage::new,
-                4
-        );
+        ManyToOneRingBuffer<TestMessage> buffer = new ManyToOneRingBuffer<>(TestMessage[]::new, TestMessage::new, 4);
 
         AtomicInteger count = new AtomicInteger(0);
         buffer.read(msg -> count.incrementAndGet());
@@ -159,11 +132,7 @@ class ManyToOneRingBufferTest {
 
     @Test
     void testSingleProducerReadSingleMessage() {
-        ManyToOneRingBuffer<TestMessage> buffer = new ManyToOneRingBuffer<>(
-                TestMessage[]::new,
-                TestMessage::new,
-                4
-        );
+        ManyToOneRingBuffer<TestMessage> buffer = new ManyToOneRingBuffer<>(TestMessage[]::new, TestMessage::new, 4);
 
         int index = buffer.tryClaim();
         buffer.commit(index);
@@ -176,11 +145,7 @@ class ManyToOneRingBufferTest {
 
     @Test
     void testSingleProducerReadMultipleMessages() {
-        ManyToOneRingBuffer<TestMessage> buffer = new ManyToOneRingBuffer<>(
-                TestMessage[]::new,
-                TestMessage::new,
-                4
-        );
+        ManyToOneRingBuffer<TestMessage> buffer = new ManyToOneRingBuffer<>(TestMessage[]::new, TestMessage::new, 4);
 
         for (int i = 0; i < 3; i++) {
             int index = buffer.tryClaim();
@@ -195,11 +160,7 @@ class ManyToOneRingBufferTest {
 
     @Test
     void testSingleProducerReadWithLimit() {
-        ManyToOneRingBuffer<TestMessage> buffer = new ManyToOneRingBuffer<>(
-                TestMessage[]::new,
-                TestMessage::new,
-                8
-        );
+        ManyToOneRingBuffer<TestMessage> buffer = new ManyToOneRingBuffer<>(TestMessage[]::new, TestMessage::new, 8);
 
         for (int i = 0; i < 5; i++) {
             int index = buffer.tryClaim();
@@ -219,11 +180,7 @@ class ManyToOneRingBufferTest {
 
     @Test
     void testSingleProducerClaimCommitReadCycle() {
-        ManyToOneRingBuffer<TestMessage> buffer = new ManyToOneRingBuffer<>(
-                TestMessage[]::new,
-                TestMessage::new,
-                4
-        );
+        ManyToOneRingBuffer<TestMessage> buffer = new ManyToOneRingBuffer<>(TestMessage[]::new, TestMessage::new, 4);
 
         // First cycle
         for (int i = 0; i < 4; i++) {
@@ -249,11 +206,7 @@ class ManyToOneRingBufferTest {
 
     @Test
     void testReset() {
-        ManyToOneRingBuffer<TestMessage> buffer = new ManyToOneRingBuffer<>(
-                TestMessage[]::new,
-                TestMessage::new,
-                8
-        );
+        ManyToOneRingBuffer<TestMessage> buffer = new ManyToOneRingBuffer<>(TestMessage[]::new, TestMessage::new, 8);
 
         // Write some messages
         for (int i = 0; i < 3; i++) {
@@ -275,11 +228,7 @@ class ManyToOneRingBufferTest {
 
     @Test
     void testWrapAroundBehavior() {
-        ManyToOneRingBuffer<TestMessage> buffer = new ManyToOneRingBuffer<>(
-                TestMessage[]::new,
-                TestMessage::new,
-                4
-        );
+        ManyToOneRingBuffer<TestMessage> buffer = new ManyToOneRingBuffer<>(TestMessage[]::new, TestMessage::new, 4);
 
         // Fill and empty buffer multiple times
         for (int cycle = 0; cycle < 10; cycle++) {
@@ -299,11 +248,7 @@ class ManyToOneRingBufferTest {
 
     @Test
     void testTwoProducersSimultaneousClaim() throws InterruptedException {
-        ManyToOneRingBuffer<TestMessage> buffer = new ManyToOneRingBuffer<>(
-                TestMessage[]::new,
-                TestMessage::new,
-                8
-        );
+        ManyToOneRingBuffer<TestMessage> buffer = new ManyToOneRingBuffer<>(TestMessage[]::new, TestMessage::new, 8);
 
         CountDownLatch startLatch = new CountDownLatch(1);
         CountDownLatch doneLatch = new CountDownLatch(2);
@@ -345,11 +290,7 @@ class ManyToOneRingBufferTest {
 
     @Test
     void testMultipleProducersNoDuplicateClaims() throws InterruptedException {
-        ManyToOneRingBuffer<TestMessage> buffer = new ManyToOneRingBuffer<>(
-                TestMessage[]::new,
-                TestMessage::new,
-                64
-        );
+        ManyToOneRingBuffer<TestMessage> buffer = new ManyToOneRingBuffer<>(TestMessage[]::new, TestMessage::new, 64);
 
         int numProducers = 8;
         int claimsPerProducer = 8;
@@ -387,11 +328,7 @@ class ManyToOneRingBufferTest {
 
     @Test
     void testMultipleProducersWithBarrier() throws InterruptedException {
-        ManyToOneRingBuffer<TestMessage> buffer = new ManyToOneRingBuffer<>(
-                TestMessage[]::new,
-                TestMessage::new,
-                32
-        );
+        ManyToOneRingBuffer<TestMessage> buffer = new ManyToOneRingBuffer<>(TestMessage[]::new, TestMessage::new, 32);
 
         int numProducers = 4;
         CyclicBarrier barrier = new CyclicBarrier(numProducers);
@@ -429,11 +366,7 @@ class ManyToOneRingBufferTest {
 
     @Test
     void testTwoProducersOutOfOrderCommit() throws InterruptedException {
-        ManyToOneRingBuffer<TestMessage> buffer = new ManyToOneRingBuffer<>(
-                TestMessage[]::new,
-                TestMessage::new,
-                8
-        );
+        ManyToOneRingBuffer<TestMessage> buffer = new ManyToOneRingBuffer<>(TestMessage[]::new, TestMessage::new, 8);
 
         CountDownLatch startLatch = new CountDownLatch(1);
         CountDownLatch claimLatch = new CountDownLatch(2);
@@ -488,11 +421,7 @@ class ManyToOneRingBufferTest {
 
     @Test
     void testMultipleProducersOutOfOrderCommit() throws InterruptedException {
-        ManyToOneRingBuffer<TestMessage> buffer = new ManyToOneRingBuffer<>(
-                TestMessage[]::new,
-                TestMessage::new,
-                16
-        );
+        ManyToOneRingBuffer<TestMessage> buffer = new ManyToOneRingBuffer<>(TestMessage[]::new, TestMessage::new, 16);
 
         int numProducers = 4;
         CountDownLatch startLatch = new CountDownLatch(1);
@@ -533,11 +462,7 @@ class ManyToOneRingBufferTest {
 
     @RepeatedTest(10)
     void testRandomOutOfOrderCommits() throws InterruptedException {
-        ManyToOneRingBuffer<TestMessage> buffer = new ManyToOneRingBuffer<>(
-                TestMessage[]::new,
-                TestMessage::new,
-                32
-        );
+        ManyToOneRingBuffer<TestMessage> buffer = new ManyToOneRingBuffer<>(TestMessage[]::new, TestMessage::new, 32);
 
         int numProducers = 8;
         CountDownLatch startLatch = new CountDownLatch(1);
@@ -576,11 +501,7 @@ class ManyToOneRingBufferTest {
 
     @RepeatedTest(5)
     void testHighConcurrencyWithConsumer() throws InterruptedException {
-        ManyToOneRingBuffer<TestMessage> buffer = new ManyToOneRingBuffer<>(
-                TestMessage[]::new,
-                TestMessage::new,
-                128
-        );
+        ManyToOneRingBuffer<TestMessage> buffer = new ManyToOneRingBuffer<>(TestMessage[]::new, TestMessage::new, 128);
 
         int numProducers = 4;
         int messagesPerProducer = 5000;
@@ -634,11 +555,7 @@ class ManyToOneRingBufferTest {
 
     @Test
     void testStressTestWithDataIntegrity() throws InterruptedException {
-        ManyToOneRingBuffer<TestMessage> buffer = new ManyToOneRingBuffer<>(
-                TestMessage[]::new,
-                TestMessage::new,
-                64
-        );
+        ManyToOneRingBuffer<TestMessage> buffer = new ManyToOneRingBuffer<>(TestMessage[]::new, TestMessage::new, 64);
 
         int numProducers = 4;
         int messagesPerProducer = 1000;
@@ -701,11 +618,7 @@ class ManyToOneRingBufferTest {
 
     @Test
     void testBufferFullWithMultipleProducers() throws InterruptedException {
-        ManyToOneRingBuffer<TestMessage> buffer = new ManyToOneRingBuffer<>(
-                TestMessage[]::new,
-                TestMessage::new,
-                8
-        );
+        ManyToOneRingBuffer<TestMessage> buffer = new ManyToOneRingBuffer<>(TestMessage[]::new, TestMessage::new, 8);
 
         int numProducers = 4;
         CountDownLatch startLatch = new CountDownLatch(1);
@@ -745,11 +658,7 @@ class ManyToOneRingBufferTest {
 
     @Test
     void testProducerConsumerWithSmallBuffer() throws InterruptedException {
-        ManyToOneRingBuffer<TestMessage> buffer = new ManyToOneRingBuffer<>(
-                TestMessage[]::new,
-                TestMessage::new,
-                4
-        );
+        ManyToOneRingBuffer<TestMessage> buffer = new ManyToOneRingBuffer<>(TestMessage[]::new, TestMessage::new, 4);
 
         int numProducers = 2;
         int messagesPerProducer = 100;
@@ -803,11 +712,7 @@ class ManyToOneRingBufferTest {
 
     @Test
     void testSingleCapacityBuffer() throws InterruptedException {
-        ManyToOneRingBuffer<TestMessage> buffer = new ManyToOneRingBuffer<>(
-                TestMessage[]::new,
-                TestMessage::new,
-                1
-        );
+        ManyToOneRingBuffer<TestMessage> buffer = new ManyToOneRingBuffer<>(TestMessage[]::new, TestMessage::new, 1);
 
         int numProducers = 3;
         int messagesPerProducer = 10;
@@ -861,11 +766,7 @@ class ManyToOneRingBufferTest {
 
     @Test
     void testLargeCapacityBuffer() throws InterruptedException {
-        ManyToOneRingBuffer<TestMessage> buffer = new ManyToOneRingBuffer<>(
-                TestMessage[]::new,
-                TestMessage::new,
-                1024
-        );
+        ManyToOneRingBuffer<TestMessage> buffer = new ManyToOneRingBuffer<>(TestMessage[]::new, TestMessage::new, 1024);
 
         int numProducers = 16;
         int messagesPerProducer = 64;
@@ -906,11 +807,7 @@ class ManyToOneRingBufferTest {
 
     @Test
     void testMultipleProducersWithWrapAround() throws InterruptedException {
-        ManyToOneRingBuffer<TestMessage> buffer = new ManyToOneRingBuffer<>(
-                TestMessage[]::new,
-                TestMessage::new,
-                8
-        );
+        ManyToOneRingBuffer<TestMessage> buffer = new ManyToOneRingBuffer<>(TestMessage[]::new, TestMessage::new, 8);
 
         int numProducers = 2;
         int cycles = 10;
@@ -951,11 +848,7 @@ class ManyToOneRingBufferTest {
 
     @Test
     void testResetWithMultipleProducers() throws InterruptedException {
-        ManyToOneRingBuffer<TestMessage> buffer = new ManyToOneRingBuffer<>(
-                TestMessage[]::new,
-                TestMessage::new,
-                16
-        );
+        ManyToOneRingBuffer<TestMessage> buffer = new ManyToOneRingBuffer<>(TestMessage[]::new, TestMessage::new, 16);
 
         int numProducers = 4;
         CountDownLatch startLatch = new CountDownLatch(1);
@@ -999,11 +892,7 @@ class ManyToOneRingBufferTest {
 
     @RepeatedTest(3)
     void testExtremeStressTest() throws InterruptedException {
-        ManyToOneRingBuffer<TestMessage> buffer = new ManyToOneRingBuffer<>(
-                TestMessage[]::new,
-                TestMessage::new,
-                512
-        );
+        ManyToOneRingBuffer<TestMessage> buffer = new ManyToOneRingBuffer<>(TestMessage[]::new, TestMessage::new, 512);
 
         int numProducers = 16;
         int messagesPerProducer = 10000;
@@ -1054,11 +943,7 @@ class ManyToOneRingBufferTest {
 
     @Test
     void testBurstProduction() throws InterruptedException {
-        ManyToOneRingBuffer<TestMessage> buffer = new ManyToOneRingBuffer<>(
-                TestMessage[]::new,
-                TestMessage::new,
-                64
-        );
+        ManyToOneRingBuffer<TestMessage> buffer = new ManyToOneRingBuffer<>(TestMessage[]::new, TestMessage::new, 64);
 
         int numProducers = 8;
         int bursts = 5;
@@ -1118,11 +1003,7 @@ class ManyToOneRingBufferTest {
 
     @Test
     void testPartialReadWithMultipleProducers() throws InterruptedException {
-        ManyToOneRingBuffer<TestMessage> buffer = new ManyToOneRingBuffer<>(
-                TestMessage[]::new,
-                TestMessage::new,
-                16
-        );
+        ManyToOneRingBuffer<TestMessage> buffer = new ManyToOneRingBuffer<>(TestMessage[]::new, TestMessage::new, 16);
 
         int numProducers = 2;
         CountDownLatch startLatch = new CountDownLatch(1);
@@ -1159,4 +1040,3 @@ class ManyToOneRingBufferTest {
         assertEquals(3, count.get());
     }
 }
-

@@ -3,14 +3,14 @@ package group.gnometrading.collections;
 import group.gnometrading.pools.Pool;
 import group.gnometrading.pools.PoolNode;
 import group.gnometrading.pools.SingleThreadedObjectPool;
-
 import java.util.Collection;
 import java.util.HashSet;
 
-public class PooledHashMap<K, V> implements GnomeMap<K, V> {
+public final class PooledHashMap<K, V> implements GnomeMap<K, V> {
     static final int MAX_CAPACITY = 1 << 30;
     static final float DEFAULT_LOAD_FACTOR = 0.75f;
     static final int DEFAULT_CAPACITY = 1 << 7;
+    private static final int DEFAULT_NODE_POOL_CAPACITY = 100;
 
     private final Pool<Node<K, V>> nodePool;
     private final float loadFactor;
@@ -26,12 +26,14 @@ public class PooledHashMap<K, V> implements GnomeMap<K, V> {
         this(initialCapacity, DEFAULT_LOAD_FACTOR);
     }
 
-
     public PooledHashMap(final int initialCapacity, final float loadFactor) {
-        this.nodePool = new SingleThreadedObjectPool<Node<K, V>>(() -> new Node(), 100); // TODO: Good number here for capacity?
+        this.nodePool = new SingleThreadedObjectPool<Node<K, V>>(
+                () -> new Node(), DEFAULT_NODE_POOL_CAPACITY); // TODO: Good number here for capacity?
 
         int capacity = 1;
-        while(capacity < initialCapacity) capacity <<= 1;
+        while (capacity < initialCapacity) {
+            capacity <<= 1;
+        }
 
         this.loadFactor = loadFactor;
         this.count = 0;
@@ -140,19 +142,21 @@ public class PooledHashMap<K, V> implements GnomeMap<K, V> {
     }
 
     @Override
+    @SuppressWarnings("checkstyle:IllegalType")
     public Collection<K> keys() {
         Collection<K> keys = new HashSet<>(size());
-        for (var node : this.hashTable) {
-            while (node != null) {
-                keys.add(node.key);
-                node = node.next;
+        for (int idx = 0; idx < this.hashTable.length; idx++) {
+            Node<K, V> current = this.hashTable[idx];
+            while (current != null) {
+                keys.add(current.key);
+                current = current.next;
             }
         }
         return keys;
     }
 
-    private void setTable(Node<K, V>[] hashTable) {
-        this.hashTable = hashTable;
+    private void setTable(Node<K, V>[] newHashTable) {
+        this.hashTable = newHashTable;
         this.loadThreshold = (int) (this.hashTable.length * this.loadFactor);
     }
 
@@ -164,8 +168,11 @@ public class PooledHashMap<K, V> implements GnomeMap<K, V> {
         }
 
         final Node<K, V>[] newTable = Node.createArray(oldTable.length << 1);
-        for (Node<K, V> node : oldTable) {
-            if (node == null) continue;
+        for (int tableIdx = 0; tableIdx < oldTable.length; tableIdx++) {
+            Node<K, V> node = oldTable[tableIdx];
+            if (node == null) {
+                continue;
+            }
 
             do {
                 var next = node.next;

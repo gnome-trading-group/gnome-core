@@ -1,10 +1,9 @@
 package group.gnometrading.concurrent;
 
+import java.util.concurrent.atomic.AtomicReference;
 import org.agrona.ErrorHandler;
 
-import java.util.concurrent.atomic.AtomicReference;
-
-public class GnomeAgentRunner implements Runnable, AutoCloseable {
+public final class GnomeAgentRunner implements Runnable, AutoCloseable {
 
     public static final Thread TOMBSTONE = new Thread();
 
@@ -20,24 +19,24 @@ public class GnomeAgentRunner implements Runnable, AutoCloseable {
         this.errorHandler = errorHandler;
     }
 
-   public static Thread startOnThread(final GnomeAgentRunner agentRunner) {
+    public static Thread startOnThread(final GnomeAgentRunner agentRunner) {
         Thread thread = new Thread(agentRunner);
         thread.setName(agentRunner.agent.roleName());
         thread.start();
         return thread;
-   }
+    }
 
-   public Thread getThread() {
+    public Thread getThread() {
         return this.thread.get();
-   }
+    }
 
-   public GnomeAgent getAgent() {
+    public GnomeAgent getAgent() {
         return this.agent;
-   }
+    }
 
-   public boolean isClosed() {
+    public boolean isClosed() {
         return closed;
-   }
+    }
 
     @Override
     public void run() {
@@ -103,8 +102,8 @@ public class GnomeAgentRunner implements Runnable, AutoCloseable {
     public void close() throws Exception {
         this.running = false;
 
-        Thread thread = this.thread.getAndSet(TOMBSTONE);
-        if (thread == null) { // We never started running
+        Thread currentThread = this.thread.getAndSet(TOMBSTONE);
+        if (currentThread == null) { // We never started running
             try {
                 this.agent.onClose();
             } catch (Throwable e) {
@@ -112,13 +111,13 @@ public class GnomeAgentRunner implements Runnable, AutoCloseable {
             } finally {
                 this.closed = true;
             }
-        } else if (TOMBSTONE != thread) {
+        } else if (TOMBSTONE != currentThread) {
             if (this.closed) {
                 return;
             }
 
             // Closed is set to true in the work loop
-            thread.join();
+            currentThread.join();
         }
     }
 }

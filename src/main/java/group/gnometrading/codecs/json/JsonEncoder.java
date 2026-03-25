@@ -2,11 +2,10 @@ package group.gnometrading.codecs.json;
 
 import group.gnometrading.strings.GnomeString;
 import group.gnometrading.utils.ByteBufferUtils;
-
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
-public class JSONEncoder {
+public final class JsonEncoder {
 
     private static final byte[] NULL = "null".getBytes(StandardCharsets.UTF_8);
     private static final byte[] TRUE = "true".getBytes(StandardCharsets.UTF_8);
@@ -14,113 +13,113 @@ public class JSONEncoder {
 
     private ByteBuffer buffer;
 
-    public JSONEncoder() {}
+    public JsonEncoder() {}
 
-    public void wrap(final ByteBuffer buffer) {
-        this.buffer = buffer;
+    public void wrap(final ByteBuffer newBuffer) {
+        this.buffer = newBuffer;
     }
 
-    public JSONEncoder writeObjectStart() {
+    public JsonEncoder writeObjectStart() {
         this.buffer.put((byte) '{');
         return this;
     }
 
-    public JSONEncoder writeObjectEnd() {
+    public JsonEncoder writeObjectEnd() {
         this.buffer.put((byte) '}');
         return this;
     }
 
-    public JSONEncoder writeArrayStart() {
+    public JsonEncoder writeArrayStart() {
         this.buffer.put((byte) '[');
         return this;
     }
 
-    public JSONEncoder writeArrayEnd() {
+    public JsonEncoder writeArrayEnd() {
         this.buffer.put((byte) ']');
         return this;
     }
 
-    public JSONEncoder writeComma() {
+    public JsonEncoder writeComma() {
         this.buffer.put((byte) ',');
         return this;
     }
 
-    public JSONEncoder writeColon() {
+    public JsonEncoder writeColon() {
         this.buffer.put((byte) ':');
         return this;
     }
 
-    public JSONEncoder writeObjectEntry(final String key, final int value) {
+    public JsonEncoder writeObjectEntry(final String key, final int value) {
         this.writeString(key);
         this.writeColon();
         this.writeNumber(value);
         return this;
     }
 
-    public JSONEncoder writeObjectEntry(final GnomeString key, final int value) {
+    public JsonEncoder writeObjectEntry(final GnomeString key, final int value) {
         this.writeString(key);
         this.writeColon();
         this.writeNumber(value);
         return this;
     }
 
-    public JSONEncoder writeObjectEntry(final String key, final String value) {
+    public JsonEncoder writeObjectEntry(final String key, final String value) {
         this.writeString(key);
         this.writeColon();
         this.writeString(value);
         return this;
     }
 
-    public JSONEncoder writeObjectEntry(final GnomeString key, final String value) {
+    public JsonEncoder writeObjectEntry(final GnomeString key, final String value) {
         this.writeString(key);
         this.writeColon();
         this.writeString(value);
         return this;
     }
 
-    public JSONEncoder writeObjectEntry(final String key, final GnomeString value) {
+    public JsonEncoder writeObjectEntry(final String key, final GnomeString value) {
         this.writeString(key);
         this.writeColon();
         this.writeString(value);
         return this;
     }
 
-    public JSONEncoder writeObjectEntry(final GnomeString key, final GnomeString value) {
+    public JsonEncoder writeObjectEntry(final GnomeString key, final GnomeString value) {
         this.writeString(key);
         this.writeColon();
         this.writeString(value);
         return this;
     }
 
-    public JSONEncoder writeObjectEntry(final String key, final double value, final int scale) {
+    public JsonEncoder writeObjectEntry(final String key, final double value, final int scale) {
         this.writeString(key);
         this.writeColon();
         this.writeNumber(value, scale);
         return this;
     }
 
-    public JSONEncoder writeObjectEntry(final GnomeString key, final double value, final int scale) {
+    public JsonEncoder writeObjectEntry(final GnomeString key, final double value, final int scale) {
         this.writeString(key);
         this.writeColon();
         this.writeNumber(value, scale);
         return this;
     }
 
-    public JSONEncoder writeObjectEntry(final String key, final boolean value) {
+    public JsonEncoder writeObjectEntry(final String key, final boolean value) {
         this.writeString(key);
         this.writeColon();
         this.writeBoolean(value);
         return this;
     }
 
-    public JSONEncoder writeObjectEntry(final GnomeString key, final boolean value) {
+    public JsonEncoder writeObjectEntry(final GnomeString key, final boolean value) {
         this.writeString(key);
         this.writeColon();
         this.writeBoolean(value);
         return this;
     }
 
-    public JSONEncoder writeString(final String value) {
+    public JsonEncoder writeString(final String value) {
         this.buffer.put((byte) '"');
         for (int i = 0; i < value.length(); i++) {
             byte at = (byte) value.charAt(i);
@@ -133,7 +132,7 @@ public class JSONEncoder {
         return this;
     }
 
-    public JSONEncoder writeString(final GnomeString value) {
+    public JsonEncoder writeString(final GnomeString value) {
         this.buffer.put((byte) '"');
         for (int i = 0; i < value.length(); i++) {
             byte at = value.byteAt(i);
@@ -146,17 +145,17 @@ public class JSONEncoder {
         return this;
     }
 
-    public JSONEncoder writeNumber(final int number) {
+    public JsonEncoder writeNumber(final int number) {
         ByteBufferUtils.putIntAscii(this.buffer, number);
         return this;
     }
 
-    public JSONEncoder writeNumber(final double number, final int scale) {
+    public JsonEncoder writeNumber(final double number, final int scale) {
         ByteBufferUtils.putDoubleAscii(this.buffer, number, scale);
         return this;
     }
 
-    public JSONEncoder writeBoolean(final boolean value) {
+    public JsonEncoder writeBoolean(final boolean value) {
         if (value) {
             return writeBytes(TRUE);
         } else {
@@ -164,15 +163,14 @@ public class JSONEncoder {
         }
     }
 
-    public JSONEncoder writeNull() {
+    public JsonEncoder writeNull() {
         return writeBytes(NULL);
     }
 
-    private JSONEncoder writeBytes(final byte[] bytes) {
+    private JsonEncoder writeBytes(final byte[] bytes) {
         for (int i = 0; i < bytes.length; i++) {
             this.buffer.put(bytes[i]);
         }
         return this;
     }
-
 }

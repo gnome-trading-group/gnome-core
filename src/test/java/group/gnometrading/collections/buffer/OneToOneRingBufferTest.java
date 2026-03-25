@@ -1,16 +1,14 @@
 package group.gnometrading.collections.buffer;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class OneToOneRingBufferTest {
 
@@ -28,11 +26,7 @@ class OneToOneRingBufferTest {
 
     @Test
     void testConstructor() {
-        OneToOneRingBuffer<TestMessage> buffer = new OneToOneRingBuffer<>(
-                TestMessage[]::new,
-                TestMessage::new,
-                8
-        );
+        OneToOneRingBuffer<TestMessage> buffer = new OneToOneRingBuffer<>(TestMessage[]::new, TestMessage::new, 8);
 
         assertNotNull(buffer);
     }
@@ -40,36 +34,30 @@ class OneToOneRingBufferTest {
     @Test
     void testConstructorWithInvalidCapacity() {
         // Not a power of 2
-        assertThrows(IllegalArgumentException.class, () ->
-                new OneToOneRingBuffer<>(TestMessage[]::new, TestMessage::new, 7)
-        );
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new OneToOneRingBuffer<>(TestMessage[]::new, TestMessage::new, 7));
 
         // Zero capacity
-        assertThrows(IllegalArgumentException.class, () ->
-                new OneToOneRingBuffer<>(TestMessage[]::new, TestMessage::new, 0)
-        );
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new OneToOneRingBuffer<>(TestMessage[]::new, TestMessage::new, 0));
 
         // Negative capacity
-        assertThrows(IllegalArgumentException.class, () ->
-                new OneToOneRingBuffer<>(TestMessage[]::new, TestMessage::new, -1)
-        );
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new OneToOneRingBuffer<>(TestMessage[]::new, TestMessage::new, -1));
     }
 
     @ParameterizedTest
     @ValueSource(ints = {1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024})
     void testConstructorWithValidPowerOfTwoCapacities(int capacity) {
-        assertDoesNotThrow(() ->
-                new OneToOneRingBuffer<>(TestMessage[]::new, TestMessage::new, capacity)
-        );
+        assertDoesNotThrow(() -> new OneToOneRingBuffer<>(TestMessage[]::new, TestMessage::new, capacity));
     }
 
     @Test
     void testTryClaimSingleSlot() {
-        OneToOneRingBuffer<TestMessage> buffer = new OneToOneRingBuffer<>(
-                TestMessage[]::new,
-                TestMessage::new,
-                4
-        );
+        OneToOneRingBuffer<TestMessage> buffer = new OneToOneRingBuffer<>(TestMessage[]::new, TestMessage::new, 4);
 
         int index = buffer.tryClaim();
         assertEquals(0, index);
@@ -77,11 +65,7 @@ class OneToOneRingBufferTest {
 
     @Test
     void testTryClaimMultipleSlots() {
-        OneToOneRingBuffer<TestMessage> buffer = new OneToOneRingBuffer<>(
-                TestMessage[]::new,
-                TestMessage::new,
-                4
-        );
+        OneToOneRingBuffer<TestMessage> buffer = new OneToOneRingBuffer<>(TestMessage[]::new, TestMessage::new, 4);
 
         assertEquals(0, buffer.tryClaim());
         assertEquals(1, buffer.tryClaim());
@@ -91,11 +75,7 @@ class OneToOneRingBufferTest {
 
     @Test
     void testTryClaimWhenFull() {
-        OneToOneRingBuffer<TestMessage> buffer = new OneToOneRingBuffer<>(
-                TestMessage[]::new,
-                TestMessage::new,
-                4
-        );
+        OneToOneRingBuffer<TestMessage> buffer = new OneToOneRingBuffer<>(TestMessage[]::new, TestMessage::new, 4);
 
         // Claim all slots
         for (int i = 0; i < 4; i++) {
@@ -109,11 +89,7 @@ class OneToOneRingBufferTest {
 
     @Test
     void testCommitSingleSlot() {
-        OneToOneRingBuffer<TestMessage> buffer = new OneToOneRingBuffer<>(
-                TestMessage[]::new,
-                TestMessage::new,
-                4
-        );
+        OneToOneRingBuffer<TestMessage> buffer = new OneToOneRingBuffer<>(TestMessage[]::new, TestMessage::new, 4);
 
         int index = buffer.tryClaim();
         assertDoesNotThrow(() -> buffer.commit(index));
@@ -121,11 +97,7 @@ class OneToOneRingBufferTest {
 
     @Test
     void testCommitInOrder() {
-        OneToOneRingBuffer<TestMessage> buffer = new OneToOneRingBuffer<>(
-                TestMessage[]::new,
-                TestMessage::new,
-                4
-        );
+        OneToOneRingBuffer<TestMessage> buffer = new OneToOneRingBuffer<>(TestMessage[]::new, TestMessage::new, 4);
 
         int index0 = buffer.tryClaim();
         int index1 = buffer.tryClaim();
@@ -138,11 +110,7 @@ class OneToOneRingBufferTest {
 
     @Test
     void testCommitOutOfOrder() {
-        OneToOneRingBuffer<TestMessage> buffer = new OneToOneRingBuffer<>(
-                TestMessage[]::new,
-                TestMessage::new,
-                4
-        );
+        OneToOneRingBuffer<TestMessage> buffer = new OneToOneRingBuffer<>(TestMessage[]::new, TestMessage::new, 4);
 
         int index0 = buffer.tryClaim();
         int index1 = buffer.tryClaim();
@@ -175,11 +143,7 @@ class OneToOneRingBufferTest {
 
     @Test
     void testReadEmptyBuffer() {
-        OneToOneRingBuffer<TestMessage> buffer = new OneToOneRingBuffer<>(
-                TestMessage[]::new,
-                TestMessage::new,
-                4
-        );
+        OneToOneRingBuffer<TestMessage> buffer = new OneToOneRingBuffer<>(TestMessage[]::new, TestMessage::new, 4);
 
         AtomicInteger count = new AtomicInteger(0);
         buffer.read(msg -> count.incrementAndGet());
@@ -189,11 +153,7 @@ class OneToOneRingBufferTest {
 
     @Test
     void testReadSingleMessage() {
-        OneToOneRingBuffer<TestMessage> buffer = new OneToOneRingBuffer<>(
-                TestMessage[]::new,
-                TestMessage::new,
-                4
-        );
+        OneToOneRingBuffer<TestMessage> buffer = new OneToOneRingBuffer<>(TestMessage[]::new, TestMessage::new, 4);
 
         int index = buffer.tryClaim();
         buffer.commit(index);
@@ -206,11 +166,7 @@ class OneToOneRingBufferTest {
 
     @Test
     void testReadMultipleMessages() {
-        OneToOneRingBuffer<TestMessage> buffer = new OneToOneRingBuffer<>(
-                TestMessage[]::new,
-                TestMessage::new,
-                4
-        );
+        OneToOneRingBuffer<TestMessage> buffer = new OneToOneRingBuffer<>(TestMessage[]::new, TestMessage::new, 4);
 
         for (int i = 0; i < 3; i++) {
             int index = buffer.tryClaim();
@@ -225,11 +181,7 @@ class OneToOneRingBufferTest {
 
     @Test
     void testReadWithLimit() {
-        OneToOneRingBuffer<TestMessage> buffer = new OneToOneRingBuffer<>(
-                TestMessage[]::new,
-                TestMessage::new,
-                8
-        );
+        OneToOneRingBuffer<TestMessage> buffer = new OneToOneRingBuffer<>(TestMessage[]::new, TestMessage::new, 8);
 
         for (int i = 0; i < 5; i++) {
             int index = buffer.tryClaim();
@@ -249,11 +201,7 @@ class OneToOneRingBufferTest {
 
     @Test
     void testClaimCommitReadCycle() {
-        OneToOneRingBuffer<TestMessage> buffer = new OneToOneRingBuffer<>(
-                TestMessage[]::new,
-                TestMessage::new,
-                4
-        );
+        OneToOneRingBuffer<TestMessage> buffer = new OneToOneRingBuffer<>(TestMessage[]::new, TestMessage::new, 4);
 
         // First cycle
         for (int i = 0; i < 4; i++) {
@@ -279,11 +227,7 @@ class OneToOneRingBufferTest {
 
     @Test
     void testDataIntegrity() {
-        OneToOneRingBuffer<TestMessage> buffer = new OneToOneRingBuffer<>(
-                TestMessage[]::new,
-                TestMessage::new,
-                8
-        );
+        OneToOneRingBuffer<TestMessage> buffer = new OneToOneRingBuffer<>(TestMessage[]::new, TestMessage::new, 8);
 
         // Write data
         for (int i = 0; i < 5; i++) {
@@ -301,11 +245,7 @@ class OneToOneRingBufferTest {
 
     @Test
     void testReset() {
-        OneToOneRingBuffer<TestMessage> buffer = new OneToOneRingBuffer<>(
-                TestMessage[]::new,
-                TestMessage::new,
-                4
-        );
+        OneToOneRingBuffer<TestMessage> buffer = new OneToOneRingBuffer<>(TestMessage[]::new, TestMessage::new, 4);
 
         // Fill buffer
         for (int i = 0; i < 4; i++) {
@@ -323,11 +263,7 @@ class OneToOneRingBufferTest {
 
     @Test
     void testResetAfterPartialRead() {
-        OneToOneRingBuffer<TestMessage> buffer = new OneToOneRingBuffer<>(
-                TestMessage[]::new,
-                TestMessage::new,
-                8
-        );
+        OneToOneRingBuffer<TestMessage> buffer = new OneToOneRingBuffer<>(TestMessage[]::new, TestMessage::new, 8);
 
         // Write 5 messages
         for (int i = 0; i < 5; i++) {
@@ -355,11 +291,7 @@ class OneToOneRingBufferTest {
 
     @Test
     void testWrapAroundBehavior() {
-        OneToOneRingBuffer<TestMessage> buffer = new OneToOneRingBuffer<>(
-                TestMessage[]::new,
-                TestMessage::new,
-                4
-        );
+        OneToOneRingBuffer<TestMessage> buffer = new OneToOneRingBuffer<>(TestMessage[]::new, TestMessage::new, 4);
 
         // Fill and empty buffer multiple times
         for (int cycle = 0; cycle < 10; cycle++) {
@@ -377,11 +309,7 @@ class OneToOneRingBufferTest {
 
     @Test
     void testPartialFillAndRead() {
-        OneToOneRingBuffer<TestMessage> buffer = new OneToOneRingBuffer<>(
-                TestMessage[]::new,
-                TestMessage::new,
-                8
-        );
+        OneToOneRingBuffer<TestMessage> buffer = new OneToOneRingBuffer<>(TestMessage[]::new, TestMessage::new, 8);
 
         // Write 3, read 2, write 2, read 3
         for (int i = 0; i < 3; i++) {
@@ -405,11 +333,7 @@ class OneToOneRingBufferTest {
 
     @Test
     void testClaimWithoutCommit() {
-        OneToOneRingBuffer<TestMessage> buffer = new OneToOneRingBuffer<>(
-                TestMessage[]::new,
-                TestMessage::new,
-                4
-        );
+        OneToOneRingBuffer<TestMessage> buffer = new OneToOneRingBuffer<>(TestMessage[]::new, TestMessage::new, 4);
 
         // Claim but don't commit
         buffer.tryClaim();
@@ -423,11 +347,7 @@ class OneToOneRingBufferTest {
 
     @Test
     void testCommitMakesDataVisible() {
-        OneToOneRingBuffer<TestMessage> buffer = new OneToOneRingBuffer<>(
-                TestMessage[]::new,
-                TestMessage::new,
-                4
-        );
+        OneToOneRingBuffer<TestMessage> buffer = new OneToOneRingBuffer<>(TestMessage[]::new, TestMessage::new, 4);
 
         int index0 = buffer.tryClaim();
         int index1 = buffer.tryClaim();
@@ -449,11 +369,7 @@ class OneToOneRingBufferTest {
 
     @Test
     void testConcurrentProducerConsumer() throws InterruptedException {
-        OneToOneRingBuffer<TestMessage> buffer = new OneToOneRingBuffer<>(
-                TestMessage[]::new,
-                TestMessage::new,
-                16
-        );
+        OneToOneRingBuffer<TestMessage> buffer = new OneToOneRingBuffer<>(TestMessage[]::new, TestMessage::new, 16);
 
         final int messagesToSend = 1000;
         CountDownLatch producerLatch = new CountDownLatch(1);
@@ -507,11 +423,7 @@ class OneToOneRingBufferTest {
 
     @Test
     void testHighThroughputConcurrency() throws InterruptedException {
-        OneToOneRingBuffer<TestMessage> buffer = new OneToOneRingBuffer<>(
-                TestMessage[]::new,
-                TestMessage::new,
-                256
-        );
+        OneToOneRingBuffer<TestMessage> buffer = new OneToOneRingBuffer<>(TestMessage[]::new, TestMessage::new, 256);
 
         final int messagesToSend = 10000;
         CountDownLatch startLatch = new CountDownLatch(1);
@@ -540,9 +452,11 @@ class OneToOneRingBufferTest {
             try {
                 startLatch.await();
                 while (messagesReceived.get() < messagesToSend) {
-                    buffer.read(msg -> {
-                        messagesReceived.incrementAndGet();
-                    }, 100);
+                    buffer.read(
+                            msg -> {
+                                messagesReceived.incrementAndGet();
+                            },
+                            100);
                 }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
@@ -564,11 +478,7 @@ class OneToOneRingBufferTest {
 
     @Test
     void testSingleCapacityBuffer() {
-        OneToOneRingBuffer<TestMessage> buffer = new OneToOneRingBuffer<>(
-                TestMessage[]::new,
-                TestMessage::new,
-                1
-        );
+        OneToOneRingBuffer<TestMessage> buffer = new OneToOneRingBuffer<>(TestMessage[]::new, TestMessage::new, 1);
 
         int index = buffer.tryClaim();
         assertEquals(0, index);
@@ -587,11 +497,7 @@ class OneToOneRingBufferTest {
 
     @Test
     void testLargeCapacityBuffer() {
-        OneToOneRingBuffer<TestMessage> buffer = new OneToOneRingBuffer<>(
-                TestMessage[]::new,
-                TestMessage::new,
-                1024
-        );
+        OneToOneRingBuffer<TestMessage> buffer = new OneToOneRingBuffer<>(TestMessage[]::new, TestMessage::new, 1024);
 
         for (int i = 0; i < 1024; i++) {
             int index = buffer.tryClaim();
@@ -608,11 +514,7 @@ class OneToOneRingBufferTest {
 
     @Test
     void testOutOfOrderCommitWithMultipleGaps() {
-        OneToOneRingBuffer<TestMessage> buffer = new OneToOneRingBuffer<>(
-                TestMessage[]::new,
-                TestMessage::new,
-                8
-        );
+        OneToOneRingBuffer<TestMessage> buffer = new OneToOneRingBuffer<>(TestMessage[]::new, TestMessage::new, 8);
 
         // Claim 5 slots
         int index0 = buffer.tryClaim();
@@ -651,11 +553,7 @@ class OneToOneRingBufferTest {
 
     @Test
     void testOutOfOrderCommitReverseOrder() {
-        OneToOneRingBuffer<TestMessage> buffer = new OneToOneRingBuffer<>(
-                TestMessage[]::new,
-                TestMessage::new,
-                8
-        );
+        OneToOneRingBuffer<TestMessage> buffer = new OneToOneRingBuffer<>(TestMessage[]::new, TestMessage::new, 8);
 
         // Claim 4 slots
         int index0 = buffer.tryClaim();
@@ -680,11 +578,7 @@ class OneToOneRingBufferTest {
 
     @Test
     void testOutOfOrderCommitWithWrapAround() {
-        OneToOneRingBuffer<TestMessage> buffer = new OneToOneRingBuffer<>(
-                TestMessage[]::new,
-                TestMessage::new,
-                4
-        );
+        OneToOneRingBuffer<TestMessage> buffer = new OneToOneRingBuffer<>(TestMessage[]::new, TestMessage::new, 4);
 
         // Fill and drain the buffer once to get wrap-around
         for (int i = 0; i < 4; i++) {

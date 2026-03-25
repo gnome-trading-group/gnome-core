@@ -1,13 +1,12 @@
 package group.gnometrading.collections;
 
+import static org.junit.jupiter.api.Assertions.*;
+
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import java.util.stream.Stream;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 class LongHashMapTest {
     private static Stream<Arguments> testGetArguments() {
@@ -16,8 +15,7 @@ class LongHashMapTest {
                 Arguments.of("1:1,5:1,3:1,10:1", 0, null),
                 Arguments.of("-1:1,-5:1,3:1,10:1", -5, 1L),
                 Arguments.of("-5:1,-5:10", -5, 10L),
-                Arguments.of(Long.MAX_VALUE+":50,-1:10", Long.MAX_VALUE, 50L)
-        );
+                Arguments.of(Long.MAX_VALUE + ":50,-1:10", Long.MAX_VALUE, 50L));
     }
 
     @ParameterizedTest
@@ -31,8 +29,7 @@ class LongHashMapTest {
                 Arguments.of("1:1", 1, ""),
                 Arguments.of("1:1", 0, "1:1"),
                 Arguments.of("1:1,2:1,3:1", 2, "1:1,3:1"),
-                Arguments.of(Long.MAX_VALUE + ":1", Long.MAX_VALUE, "")
-        );
+                Arguments.of(Long.MAX_VALUE + ":1", Long.MAX_VALUE, ""));
     }
 
     @ParameterizedTest
