@@ -70,9 +70,11 @@ class JsonEncoderTest {
                                     .writeObjectEntry(new ViewString("int"), 505)
                                     .writeComma()
                                     .writeObjectEntry(new ViewString("double"), 5.24, 4)
+                                    .writeComma()
+                                    .writeObjectEntry(new ViewString("long"), 5555L)
                                     .writeObjectEnd();
                         },
-                        "{\"boolKey\":true,\"boolKey\":false,\"int\":505,\"double\":5.2400}"),
+                        "{\"boolKey\":true,\"boolKey\":false,\"int\":505,\"double\":5.2400,\"long\":5555}"),
                 Arguments.of(
                         (Consumer<JsonEncoder>) (encoder) -> {
                             encoder.writeObjectStart()
@@ -90,12 +92,14 @@ class JsonEncoderTest {
                                     .writeNumber(2)
                                     .writeComma()
                                     .writeNumber(3)
+                                    .writeComma()
+                                    .writeNumber(5666L)
                                     .writeArrayEnd()
                                     .writeObjectEnd()
                                     .writeObjectEnd()
                                     .writeObjectEnd();
                         },
-                        "{\"nested\":{\"arrayObj\":{\"arr\":[1,2,3]}}}"));
+                        "{\"nested\":{\"arrayObj\":{\"arr\":[1,2,3,5666]}}}"));
     }
 
     @ParameterizedTest

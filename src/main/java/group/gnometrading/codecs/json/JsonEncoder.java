@@ -105,6 +105,20 @@ public final class JsonEncoder {
         return this;
     }
 
+    public JsonEncoder writeObjectEntry(final String key, final long value) {
+        this.writeString(key);
+        this.writeColon();
+        this.writeNumber(value);
+        return this;
+    }
+
+    public JsonEncoder writeObjectEntry(final GnomeString key, final long value) {
+        this.writeString(key);
+        this.writeColon();
+        this.writeNumber(value);
+        return this;
+    }
+
     public JsonEncoder writeObjectEntry(final String key, final boolean value) {
         this.writeString(key);
         this.writeColon();
@@ -147,6 +161,11 @@ public final class JsonEncoder {
 
     public JsonEncoder writeNumber(final int number) {
         ByteBufferUtils.putIntAscii(this.buffer, number);
+        return this;
+    }
+
+    public JsonEncoder writeNumber(final long number) {
+        ByteBufferUtils.putLongAscii(this.buffer, number);
         return this;
     }
 
