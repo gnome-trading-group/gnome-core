@@ -814,6 +814,7 @@ class ManyToOneRingBufferTest {
         CountDownLatch startLatch = new CountDownLatch(1);
         CountDownLatch doneLatch = new CountDownLatch(numProducers);
         AtomicInteger totalProduced = new AtomicInteger(0);
+        AtomicInteger totalConsumed = new AtomicInteger(0);
 
         for (int i = 0; i < numProducers; i++) {
             Thread t = new Thread(() -> {
@@ -828,8 +829,6 @@ class ManyToOneRingBufferTest {
                             buffer.commit(index);
                             totalProduced.incrementAndGet();
                         }
-                        // Read to make space
-                        buffer.read(msg -> {}, 4);
                     }
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
@@ -840,10 +839,23 @@ class ManyToOneRingBufferTest {
             t.start();
         }
 
+        // Single consumer thread — matches the many-to-ONE contract of this buffer
+        AtomicBoolean producersDone = new AtomicBoolean(false);
+        Thread consumer = new Thread(() -> {
+            while (!producersDone.get() || totalConsumed.get() < totalProduced.get()) {
+                buffer.read(msg -> totalConsumed.incrementAndGet());
+                Thread.yield();
+            }
+        });
+        consumer.start();
+
         startLatch.countDown();
         assertTrue(doneLatch.await(10, TimeUnit.SECONDS));
+        producersDone.set(true);
+        consumer.join(5000);
 
         assertEquals(numProducers * cycles * 4, totalProduced.get());
+        assertEquals(totalProduced.get(), totalConsumed.get());
     }
 
     @Test
