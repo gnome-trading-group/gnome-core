@@ -2,6 +2,9 @@ package group.gnometrading.collections;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.LongConsumer;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -78,6 +81,44 @@ class LongHashMapTest {
         map.clear();
         assertNull(map.get(1));
         assertEquals(0, map.size());
+    }
+
+    @Test
+    void testForEachValueVisitsAllValues() {
+        LongMap<Long> map = generate("1:10,2:20,3:30");
+        List<Long> values = new ArrayList<>();
+        map.forEachValue(values::add);
+        assertEquals(3, values.size());
+        assertTrue(values.contains(10L));
+        assertTrue(values.contains(20L));
+        assertTrue(values.contains(30L));
+    }
+
+    @Test
+    void testForEachValueOnEmptyMap() {
+        LongMap<Long> map = new LongHashMap<>();
+        List<Long> values = new ArrayList<>();
+        map.forEachValue(values::add);
+        assertTrue(values.isEmpty());
+    }
+
+    @Test
+    void testForEachKeyVisitsAllKeys() {
+        LongMap<Long> map = generate("1:10,2:20,3:30");
+        List<Long> keys = new ArrayList<>();
+        map.forEachKey((LongConsumer) keys::add);
+        assertEquals(3, keys.size());
+        assertTrue(keys.contains(1L));
+        assertTrue(keys.contains(2L));
+        assertTrue(keys.contains(3L));
+    }
+
+    @Test
+    void testForEachKeyOnEmptyMap() {
+        LongMap<Long> map = new LongHashMap<>();
+        List<Long> keys = new ArrayList<>();
+        map.forEachKey((LongConsumer) keys::add);
+        assertTrue(keys.isEmpty());
     }
 
     private static LongMap<Long> generate(String pairs) {

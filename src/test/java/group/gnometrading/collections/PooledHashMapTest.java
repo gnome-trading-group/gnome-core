@@ -2,6 +2,8 @@ package group.gnometrading.collections;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -77,6 +79,44 @@ class PooledHashMapTest {
         map.clear();
         assertNull(map.get("1"));
         assertEquals(0, map.size());
+    }
+
+    @Test
+    void testForEachValueVisitsAllValues() {
+        GnomeMap<String, String> map = generate("a:x,b:y,c:z");
+        List<String> values = new ArrayList<>();
+        map.forEachValue(values::add);
+        assertEquals(3, values.size());
+        assertTrue(values.contains("x"));
+        assertTrue(values.contains("y"));
+        assertTrue(values.contains("z"));
+    }
+
+    @Test
+    void testForEachValueOnEmptyMap() {
+        GnomeMap<String, String> map = new PooledHashMap<>();
+        List<String> values = new ArrayList<>();
+        map.forEachValue(values::add);
+        assertTrue(values.isEmpty());
+    }
+
+    @Test
+    void testForEachKeyVisitsAllKeys() {
+        GnomeMap<String, String> map = generate("a:x,b:y,c:z");
+        List<String> keys = new ArrayList<>();
+        map.forEachKey(keys::add);
+        assertEquals(3, keys.size());
+        assertTrue(keys.contains("a"));
+        assertTrue(keys.contains("b"));
+        assertTrue(keys.contains("c"));
+    }
+
+    @Test
+    void testForEachKeyOnEmptyMap() {
+        GnomeMap<String, String> map = new PooledHashMap<>();
+        List<String> keys = new ArrayList<>();
+        map.forEachKey(keys::add);
+        assertTrue(keys.isEmpty());
     }
 
     private static GnomeMap<String, String> generate(String pairs) {

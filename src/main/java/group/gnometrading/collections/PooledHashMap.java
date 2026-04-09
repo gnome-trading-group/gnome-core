@@ -5,6 +5,7 @@ import group.gnometrading.pools.PoolNode;
 import group.gnometrading.pools.SingleThreadedObjectPool;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.function.Consumer;
 
 public final class PooledHashMap<K, V> implements GnomeMap<K, V> {
     static final int MAX_CAPACITY = 1 << 30;
@@ -153,6 +154,28 @@ public final class PooledHashMap<K, V> implements GnomeMap<K, V> {
             }
         }
         return keys;
+    }
+
+    @Override
+    public void forEachValue(Consumer<V> consumer) {
+        for (int i = 0; i < this.hashTable.length; i++) {
+            Node<K, V> node = this.hashTable[i];
+            while (node != null) {
+                consumer.accept(node.value);
+                node = node.next;
+            }
+        }
+    }
+
+    @Override
+    public void forEachKey(Consumer<K> consumer) {
+        for (int i = 0; i < this.hashTable.length; i++) {
+            Node<K, V> node = this.hashTable[i];
+            while (node != null) {
+                consumer.accept(node.key);
+                node = node.next;
+            }
+        }
     }
 
     private void setTable(Node<K, V>[] newHashTable) {

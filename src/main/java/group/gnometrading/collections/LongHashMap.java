@@ -5,6 +5,8 @@ import group.gnometrading.pools.PoolNode;
 import group.gnometrading.pools.SingleThreadedObjectPool;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.function.Consumer;
+import java.util.function.LongConsumer;
 
 /**
  * Single-threaded long map to avoid boxing.
@@ -159,6 +161,28 @@ public final class LongHashMap<T> implements LongMap<T> {
             }
         }
         return keys;
+    }
+
+    @Override
+    public void forEachValue(Consumer<T> consumer) {
+        for (int i = 0; i < this.hashTable.length; i++) {
+            Node<T> node = this.hashTable[i];
+            while (node != null) {
+                consumer.accept(node.value);
+                node = node.next;
+            }
+        }
+    }
+
+    @Override
+    public void forEachKey(LongConsumer consumer) {
+        for (int i = 0; i < this.hashTable.length; i++) {
+            Node<T> node = this.hashTable[i];
+            while (node != null) {
+                consumer.accept(node.key);
+                node = node.next;
+            }
+        }
     }
 
     private void setTable(Node<T>[] newHashTable) {

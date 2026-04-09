@@ -2,6 +2,8 @@ package group.gnometrading.collections;
 
 import group.gnometrading.utils.Resettable;
 import java.util.Collection;
+import java.util.function.Consumer;
+import java.util.function.LongConsumer;
 
 public interface LongMap<T> extends Resettable {
     T get(long key);
@@ -19,6 +21,10 @@ public interface LongMap<T> extends Resettable {
     void clear();
 
     Collection<Long> keys();
+
+    void forEachValue(Consumer<T> consumer);
+
+    void forEachKey(LongConsumer consumer);
 
     @Override
     default void reset() {

@@ -2,6 +2,9 @@ package group.gnometrading.collections;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.IntConsumer;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -75,6 +78,44 @@ class IntHashMapTest {
         map.clear();
         assertNull(map.get(1));
         assertEquals(0, map.size());
+    }
+
+    @Test
+    void testForEachValueVisitsAllValues() {
+        IntMap<Integer> map = generate("1:10,2:20,3:30");
+        List<Integer> values = new ArrayList<>();
+        map.forEachValue(values::add);
+        assertEquals(3, values.size());
+        assertTrue(values.contains(10));
+        assertTrue(values.contains(20));
+        assertTrue(values.contains(30));
+    }
+
+    @Test
+    void testForEachValueOnEmptyMap() {
+        IntMap<Integer> map = new IntHashMap<>();
+        List<Integer> values = new ArrayList<>();
+        map.forEachValue(values::add);
+        assertTrue(values.isEmpty());
+    }
+
+    @Test
+    void testForEachKeyVisitsAllKeys() {
+        IntMap<Integer> map = generate("1:10,2:20,3:30");
+        List<Integer> keys = new ArrayList<>();
+        map.forEachKey((IntConsumer) keys::add);
+        assertEquals(3, keys.size());
+        assertTrue(keys.contains(1));
+        assertTrue(keys.contains(2));
+        assertTrue(keys.contains(3));
+    }
+
+    @Test
+    void testForEachKeyOnEmptyMap() {
+        IntMap<Integer> map = new IntHashMap<>();
+        List<Integer> keys = new ArrayList<>();
+        map.forEachKey((IntConsumer) keys::add);
+        assertTrue(keys.isEmpty());
     }
 
     private static IntMap<Integer> generate(String pairs) {
