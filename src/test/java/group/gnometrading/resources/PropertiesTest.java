@@ -22,6 +22,18 @@ class PropertiesTest {
     }
 
     @Test
+    void getLongProperty() {
+        assertEquals(9876543210L, properties.getLongProperty("long.valid.key"));
+        assertThrows(NumberFormatException.class, () -> properties.getLongProperty("int.invalid.key"));
+    }
+
+    @Test
+    void getDoubleProperty() {
+        assertEquals(3.14159, properties.getDoubleProperty("double.valid.key"), 1e-9);
+        assertThrows(NumberFormatException.class, () -> properties.getDoubleProperty("int.invalid.key"));
+    }
+
+    @Test
     void getBooleanProperty() {
         assertTrue(properties.getBooleanProperty("boolean.true.key"));
         assertFalse(properties.getBooleanProperty("boolean.false.key"));

@@ -105,6 +105,14 @@ public final class Properties {
         return Integer.parseInt(this.getStringProperty(key));
     }
 
+    public long getLongProperty(final String key) {
+        return Long.parseLong(this.getStringProperty(key));
+    }
+
+    public double getDoubleProperty(final String key) {
+        return Double.parseDouble(this.getStringProperty(key));
+    }
+
     public boolean getBooleanProperty(final String key) {
         return Boolean.parseBoolean(this.getStringProperty(key));
     }
