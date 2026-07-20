@@ -3,6 +3,8 @@ package group.gnometrading.resources;
 import group.gnometrading.collections.GnomeMap;
 import group.gnometrading.collections.PooledHashMap;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Properties class is used to maintain configuration properties loaded in
@@ -139,6 +141,35 @@ public final class Properties {
         }
 
         return this.internalProps.getProperty(key);
+    }
+
+    /**
+     * Returns all properties whose keys start with the given prefix, with the prefix stripped.
+     *
+     * <p>Precedence matches {@link #getStringProperty}: CLI overrides env overrides file.
+     * Allocates on startup only — not safe to call on the hot path.
+     *
+     * @param prefix the key prefix to filter by (e.g. "strategy.args.")
+     * @return map of suffix → value for all matching keys
+     */
+    public Map<String, String> getPropertiesByPrefix(final String prefix) {
+        final Map<String, String> result = new HashMap<>();
+        for (final String key : internalProps.stringPropertyNames()) {
+            if (key.startsWith(prefix)) {
+                result.put(key.substring(prefix.length()), internalProps.getProperty(key));
+            }
+        }
+        envOverrides.forEachKey(key -> {
+            if (key.startsWith(prefix)) {
+                result.put(key.substring(prefix.length()), envOverrides.get(key));
+            }
+        });
+        cliOverrides.forEachKey(key -> {
+            if (key.startsWith(prefix)) {
+                result.put(key.substring(prefix.length()), cliOverrides.get(key));
+            }
+        });
+        return result;
     }
 
     private void ensureValidProperty(final String key) {

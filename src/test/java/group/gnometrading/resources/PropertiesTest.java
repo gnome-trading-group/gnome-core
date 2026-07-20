@@ -3,6 +3,7 @@ package group.gnometrading.resources;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.io.IOException;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -143,6 +144,40 @@ class PropertiesTest {
         String[] args = {"--custom.enabled=true"};
         Properties propsWithCli = new Properties("properties/test-props.properties", args);
         assertTrue(propsWithCli.getBooleanProperty("custom.enabled"));
+    }
+
+    @Test
+    void getPropertiesByPrefix_returnsMatchingKeysFromFile() throws IOException {
+        Properties props = new Properties("properties/test-props.properties");
+        Map<String, String> result = props.getPropertiesByPrefix("boolean.");
+        assertEquals(2, result.size());
+        assertEquals("true", result.get("true.key"));
+        assertEquals("false", result.get("false.key"));
+    }
+
+    @Test
+    void getPropertiesByPrefix_returnsEmptyMapWhenNothingMatches() throws IOException {
+        Properties props = new Properties("properties/test-props.properties");
+        Map<String, String> result = props.getPropertiesByPrefix("nonexistent.prefix.");
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void getPropertiesByPrefix_cliOverridesFile() throws IOException {
+        String[] args = {"--int.valid.key=9999"};
+        Properties props = new Properties("properties/test-props.properties", args);
+        Map<String, String> result = props.getPropertiesByPrefix("int.");
+        assertEquals("9999", result.get("valid.key"));
+    }
+
+    @Test
+    void getPropertiesByPrefix_cliAddsNewKeys() throws IOException {
+        String[] args = {"--strategy.args.threshold=0.5", "--strategy.args.lookback=20"};
+        Properties props = new Properties("properties/test-props.properties", args);
+        Map<String, String> result = props.getPropertiesByPrefix("strategy.args.");
+        assertEquals(2, result.size());
+        assertEquals("0.5", result.get("threshold"));
+        assertEquals("20", result.get("lookback"));
     }
 
     @Test
