@@ -269,6 +269,69 @@ public final class JsonDecoder {
                     && byteBuffer.get(byteBuffer.position() + 2) == 'l'
                     && byteBuffer.get(byteBuffer.position() + 3) == 'l';
         }
+
+        /**
+         * Captures the raw JSON bytes of any value type (object, array, number, boolean, null)
+         * and returns them as a string. Leaves the parser positioned immediately after the value
+         * so subsequent fields can be read normally.
+         *
+         * <p>Use this instead of {@link #asString()} when the JSON value may be a non-string type
+         * (e.g., a {@code jsonb} column returned as a raw object by a Node.js API).
+         */
+        public GnomeString asRawJson() {
+            consumeWhitespace();
+            captureRawValue(this.value);
+            return this.value;
+        }
+
+        private void captureRawValue(final ExpandingMutableString destination) {
+            if (!byteBuffer.hasRemaining()) {
+                return;
+            }
+            final byte first = byteBuffer.get(byteBuffer.position());
+            if (first == '{' || first == '[') {
+                final byte closeWith = first == '{' ? (byte) '}' : (byte) ']';
+                destination.append(byteBuffer.get());
+                captureStructureContent(destination, closeWith);
+            } else {
+                while (byteBuffer.hasRemaining()) {
+                    final byte at = byteBuffer.get(byteBuffer.position());
+                    if (at == ',' || at == '}' || at == ']' || isWhitespace(at)) {
+                        break;
+                    }
+                    destination.append(byteBuffer.get());
+                }
+            }
+        }
+
+        private void captureStructureContent(final ExpandingMutableString destination, final byte closeWith) {
+            while (byteBuffer.hasRemaining()) {
+                final byte at = byteBuffer.get();
+                destination.append(at);
+                if (at == closeWith) {
+                    return;
+                } else if (at == '{') {
+                    captureStructureContent(destination, (byte) '}');
+                } else if (at == '[') {
+                    captureStructureContent(destination, (byte) ']');
+                } else if (at == '"') {
+                    captureStringContent(destination);
+                }
+            }
+        }
+
+        private void captureStringContent(final ExpandingMutableString destination) {
+            while (byteBuffer.hasRemaining()) {
+                final byte at = byteBuffer.get();
+                destination.append(at);
+                if (at == '"') {
+                    return;
+                }
+                if (at == '\\' && byteBuffer.hasRemaining()) {
+                    destination.append(byteBuffer.get());
+                }
+            }
+        }
     }
 
     public final class JsonObject implements AutoCloseable {

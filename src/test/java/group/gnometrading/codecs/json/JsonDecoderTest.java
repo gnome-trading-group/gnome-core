@@ -293,6 +293,146 @@ class JsonDecoderTest {
         }
     }
 
+    private static Stream<Arguments> testRawJsonNodesArguments() {
+        return Stream.of(
+                Arguments.of("{}", "{}"),
+                Arguments.of("{\"key\": 100}", "{\"key\": 100}"),
+                Arguments.of(
+                        "{\"key\": \"value\", \"nested\": {\"a\": 1}}", "{\"key\": \"value\", \"nested\": {\"a\": 1}}"),
+                Arguments.of("[1, 2, 3]", "[1, 2, 3]"),
+                Arguments.of("[[1], [2]]", "[[1], [2]]"),
+                Arguments.of("true", "true"),
+                Arguments.of("false", "false"),
+                Arguments.of("null", "null"),
+                Arguments.of("42", "42"),
+                Arguments.of("-7", "-7"));
+    }
+
+    @ParameterizedTest
+    @MethodSource("testRawJsonNodesArguments")
+    void testRawJsonNodes(String json, String expected) {
+        assertTrue(new ViewString(expected)
+                .equals(new JsonDecoder().wrap(ByteBuffer.wrap(json.getBytes())).asRawJson()));
+    }
+
+    @Test
+    public void testRawJsonEmptyObjectInObjectContext() {
+        String payload = "{\"params\": {}, \"enabled\": false, \"name\": \"test\"}";
+        JsonDecoder jsonDecoder = new JsonDecoder();
+        try (var node = jsonDecoder.wrap(ByteBuffer.wrap(payload.getBytes()))) {
+            try (var obj = node.asObject()) {
+                try (var params = obj.nextKey()) {
+                    assertTrue(params.getName().equals("params"));
+                    assertTrue(params.asRawJson().equals("{}"));
+                }
+                try (var enabled = obj.nextKey()) {
+                    assertTrue(enabled.getName().equals("enabled"));
+                    assertFalse(enabled.asBoolean());
+                }
+                try (var name = obj.nextKey()) {
+                    assertTrue(name.getName().equals("name"));
+                    assertTrue(name.asString().equals("test"));
+                }
+                assertFalse(obj.hasNextKey());
+            }
+        }
+    }
+
+    @Test
+    public void testRawJsonNestedObjectInObjectContext() {
+        String payload = "{\"params\": {\"maxPosition\": 100}, \"enabled\": true}";
+        JsonDecoder jsonDecoder = new JsonDecoder();
+        try (var node = jsonDecoder.wrap(ByteBuffer.wrap(payload.getBytes()))) {
+            try (var obj = node.asObject()) {
+                try (var params = obj.nextKey()) {
+                    assertTrue(params.getName().equals("params"));
+                    assertTrue(params.asRawJson().equals("{\"maxPosition\": 100}"));
+                }
+                try (var enabled = obj.nextKey()) {
+                    assertTrue(enabled.getName().equals("enabled"));
+                    assertTrue(enabled.asBoolean());
+                }
+                assertFalse(obj.hasNextKey());
+            }
+        }
+    }
+
+    @Test
+    public void testRawJsonArrayInObjectContext() {
+        String payload = "{\"items\": [1, 2, 3], \"count\": 3}";
+        JsonDecoder jsonDecoder = new JsonDecoder();
+        try (var node = jsonDecoder.wrap(ByteBuffer.wrap(payload.getBytes()))) {
+            try (var obj = node.asObject()) {
+                try (var items = obj.nextKey()) {
+                    assertTrue(items.getName().equals("items"));
+                    assertTrue(items.asRawJson().equals("[1, 2, 3]"));
+                }
+                try (var count = obj.nextKey()) {
+                    assertTrue(count.getName().equals("count"));
+                    assertEquals(3, count.asInt());
+                }
+                assertFalse(obj.hasNextKey());
+            }
+        }
+    }
+
+    @Test
+    public void testRawJsonBooleanInObjectContext() {
+        String payload = "{\"flag\": true, \"count\": 5}";
+        JsonDecoder jsonDecoder = new JsonDecoder();
+        try (var node = jsonDecoder.wrap(ByteBuffer.wrap(payload.getBytes()))) {
+            try (var obj = node.asObject()) {
+                try (var flag = obj.nextKey()) {
+                    assertTrue(flag.getName().equals("flag"));
+                    assertTrue(flag.asRawJson().equals("true"));
+                }
+                try (var count = obj.nextKey()) {
+                    assertTrue(count.getName().equals("count"));
+                    assertEquals(5, count.asInt());
+                }
+                assertFalse(obj.hasNextKey());
+            }
+        }
+    }
+
+    @Test
+    public void testRawJsonNullInObjectContext() {
+        String payload = "{\"value\": null, \"count\": 5}";
+        JsonDecoder jsonDecoder = new JsonDecoder();
+        try (var node = jsonDecoder.wrap(ByteBuffer.wrap(payload.getBytes()))) {
+            try (var obj = node.asObject()) {
+                try (var value = obj.nextKey()) {
+                    assertTrue(value.getName().equals("value"));
+                    assertTrue(value.asRawJson().equals("null"));
+                }
+                try (var count = obj.nextKey()) {
+                    assertTrue(count.getName().equals("count"));
+                    assertEquals(5, count.asInt());
+                }
+                assertFalse(obj.hasNextKey());
+            }
+        }
+    }
+
+    @Test
+    public void testRawJsonDeeplyNestedInObjectContext() {
+        String payload = "{\"config\": {\"a\": {\"b\": [1, {\"c\": 2}]}}, \"done\": true}";
+        JsonDecoder jsonDecoder = new JsonDecoder();
+        try (var node = jsonDecoder.wrap(ByteBuffer.wrap(payload.getBytes()))) {
+            try (var obj = node.asObject()) {
+                try (var config = obj.nextKey()) {
+                    assertTrue(config.getName().equals("config"));
+                    assertTrue(config.asRawJson().equals("{\"a\": {\"b\": [1, {\"c\": 2}]}}"));
+                }
+                try (var done = obj.nextKey()) {
+                    assertTrue(done.getName().equals("done"));
+                    assertTrue(done.asBoolean());
+                }
+                assertFalse(obj.hasNextKey());
+            }
+        }
+    }
+
     @Test
     public void testConsumesNestedObjects() {
         String payload =
