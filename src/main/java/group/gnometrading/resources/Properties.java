@@ -119,6 +119,12 @@ public final class Properties {
         return Boolean.parseBoolean(this.getStringProperty(key));
     }
 
+    public boolean hasProperty(final String key) {
+        return this.cliOverrides.containsKey(key)
+                || this.envOverrides.containsKey(key)
+                || this.internalProps.containsKey(key);
+    }
+
     /**
      * Gets a string property with the following precedence:
      * 1. CLI argument override (highest priority)
