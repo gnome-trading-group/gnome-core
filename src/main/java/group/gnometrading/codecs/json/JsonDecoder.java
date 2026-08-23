@@ -6,6 +6,7 @@ import group.gnometrading.pools.SingleThreadedObjectPool;
 import group.gnometrading.strings.ExpandingMutableString;
 import group.gnometrading.strings.GnomeString;
 import group.gnometrading.strings.MutableString;
+import group.gnometrading.utils.ByteBufferUtils;
 import java.nio.ByteBuffer;
 
 /**
@@ -13,10 +14,6 @@ import java.nio.ByteBuffer;
  */
 public final class JsonDecoder {
 
-    private static final byte CH_SPACE = ' ';
-    private static final byte CH_LINEFEED = '\n';
-    private static final byte CH_TAB = '\t';
-    private static final byte CH_CARRIAGE_RETURN = '\r';
     private static final int DEFAULT_NODES = 100;
     private static final int DEFAULT_NODE_CAPACITY = 200;
     private static final byte NULL_BYTE = 0;
@@ -49,9 +46,7 @@ public final class JsonDecoder {
     }
 
     private void consumeWhitespace() {
-        while (byteBuffer.hasRemaining() && isWhitespace(byteBuffer.get(byteBuffer.position()))) {
-            byteBuffer.get();
-        }
+        ByteBufferUtils.skipWhitespace(this.byteBuffer);
     }
 
     private void consumeUntilNextItem(final byte closingChar) {
@@ -69,10 +64,6 @@ public final class JsonDecoder {
                 consumeRecursively((byte) '}');
             }
         }
-    }
-
-    private boolean isWhitespace(final byte value) {
-        return value == CH_SPACE || value == CH_TAB || value == CH_LINEFEED || value == CH_CARRIAGE_RETURN;
     }
 
     private void consume(final byte target) {
@@ -296,7 +287,7 @@ public final class JsonDecoder {
             } else {
                 while (byteBuffer.hasRemaining()) {
                     final byte at = byteBuffer.get(byteBuffer.position());
-                    if (at == ',' || at == '}' || at == ']' || isWhitespace(at)) {
+                    if (at == ',' || at == '}' || at == ']' || ByteBufferUtils.isWhitespace(at)) {
                         break;
                     }
                     destination.append(byteBuffer.get());

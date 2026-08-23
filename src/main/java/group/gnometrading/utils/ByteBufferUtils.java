@@ -380,4 +380,17 @@ public final class ByteBufferUtils {
 
         buffer.position(offset + digits);
     }
+
+    public static boolean isWhitespace(final byte value) {
+        return value == ' ' || value == '\n' || value == '\r' || value == '\t';
+    }
+
+    public static void skipWhitespace(final ByteBuffer buffer) {
+        while (buffer.hasRemaining()) {
+            if (!isWhitespace(buffer.get(buffer.position()))) {
+                return;
+            }
+            buffer.get();
+        }
+    }
 }
