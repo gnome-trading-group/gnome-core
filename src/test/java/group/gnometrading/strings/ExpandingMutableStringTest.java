@@ -76,7 +76,11 @@ class ExpandingMutableStringTest {
                             return s;
                         },
                         "bbb",
-                        "aaaaabbb"));
+                        "aaaaabbb"),
+                Arguments.of(
+                        (Supplier<MutableString>) () -> new ExpandingMutableString(0),
+                        "x".repeat(150),
+                        "x".repeat(150)));
     }
 
     @ParameterizedTest
@@ -186,7 +190,15 @@ class ExpandingMutableStringTest {
                             return s;
                         },
                         new ViewString("This is a longer string!"),
-                        "This is a longer string!"));
+                        "This is a longer string!"),
+                Arguments.of(
+                        (Supplier<MutableString>) () -> {
+                            var s = new ExpandingMutableString(10);
+                            s.appendString("12345678");
+                            return s;
+                        },
+                        new ViewString("abcdefghijkl"),
+                        "abcdefghijkl"));
     }
 
     @ParameterizedTest

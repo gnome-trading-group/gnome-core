@@ -31,22 +31,27 @@ public final class ExpandingMutableString extends MutableString {
 
     private void ensureCapacity(final int minimumCapacity) {
         hash = 0;
-        if (this.bytes.length == 0) {
-            expand(DEFAULT_CAPACITY);
+        final int required = this.offset + this.length + minimumCapacity;
+        if (required <= this.bytes.length) {
             return;
         }
 
-        int remaining = this.capacity() - this.length;
-        while (remaining < minimumCapacity) {
-            expand(2 * this.bytes.length); // TODO: Handle overflow here?
-            remaining = this.capacity() - this.length;
+        int newSize = Math.max(this.bytes.length, DEFAULT_CAPACITY);
+        while (newSize < required) {
+            newSize <<= 1;
+            if (newSize <= 0) {
+                newSize = required;
+                break;
+            }
         }
+        expand(newSize);
     }
 
     @Override
     public void copy(GnomeString other) {
-        if (this.bytes.length < other.length()) {
-            ensureCapacity(other.length() - this.bytes.length);
+        if (other != null && this.bytes.length < other.length()) {
+            reset();
+            ensureCapacity(other.length());
         }
         super.copy(other);
     }

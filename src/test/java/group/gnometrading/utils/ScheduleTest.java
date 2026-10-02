@@ -349,6 +349,26 @@ class ScheduleTest {
     }
 
     @Test
+    void testForceTriggerDuringTaskIsNotOverwritten() {
+        when(mockClock.time()).thenReturn(1000L, 1500L, 1501L);
+
+        final Schedule[] holder = new Schedule[1];
+        final AtomicInteger runs = new AtomicInteger();
+        Schedule schedule = new Schedule(mockClock, 500, () -> {
+            if (runs.incrementAndGet() == 1) {
+                holder[0].forceTrigger();
+            }
+        });
+        holder[0] = schedule;
+        schedule.start();
+
+        schedule.check();
+        schedule.check();
+
+        assertEquals(2, runs.get());
+    }
+
+    @Test
     void testForceTriggerAfterStart() {
         when(mockClock.time()).thenReturn(1000L, 1200L, 1200L);
 

@@ -159,6 +159,9 @@ class ByteBufferUtilsTest {
                 Arguments.of(ByteBuffer.allocate(6), 123.99, 2, "123.99", 6),
                 Arguments.of(ByteBuffer.allocate(5), 123.99, 1, "124.0", 5),
                 Arguments.of(ByteBuffer.allocate(6), -123.99, 1, "-124.0", 6),
+                Arguments.of(ByteBuffer.wrap("aaaaaa".getBytes()), 9.5, 1, "9.5aaa", 3),
+                Arguments.of(ByteBuffer.wrap("aaaaaa".getBytes()), -99.96, 1, "-100.0", 6),
+                Arguments.of(ByteBuffer.wrap("aaaaaa".getBytes()), 0.5, 1, "0.5aaa", 3),
                 Arguments.of(ByteBuffer.wrap("aaaaaa".getBytes()).position(1), 4.56, 2, "a4.56a", 4),
                 Arguments.of(ByteBuffer.wrap("aaaaaa".getBytes()).position(1), 4.56, 3, "a4.560", 5),
                 Arguments.of(ByteBuffer.wrap("aaaaaa".getBytes()).position(1), 4.56, 0, "a5aaaa", 1));

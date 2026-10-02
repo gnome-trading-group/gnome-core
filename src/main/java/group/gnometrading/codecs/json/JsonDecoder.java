@@ -6,6 +6,7 @@ import group.gnometrading.pools.SingleThreadedObjectPool;
 import group.gnometrading.strings.ExpandingMutableString;
 import group.gnometrading.strings.GnomeString;
 import group.gnometrading.strings.MutableString;
+import group.gnometrading.utils.AsciiEncoding;
 import group.gnometrading.utils.ByteBufferUtils;
 import java.nio.ByteBuffer;
 
@@ -62,6 +63,8 @@ public final class JsonDecoder {
                 consumeRecursively((byte) ']');
             } else if (at == '{') {
                 consumeRecursively((byte) '}');
+            } else if (at == '"') {
+                consumeStringLiteral();
             }
         }
     }
@@ -86,10 +89,20 @@ public final class JsonDecoder {
                 consumeRecursively((byte) ']');
             } else if (at == '{') {
                 consumeRecursively((byte) '}');
-            } else if (at == '\\') {
-                if (byteBuffer.hasRemaining() && byteBuffer.get(byteBuffer.position()) == target) {
-                    byteBuffer.get();
-                }
+            } else if (at == '"') {
+                consumeStringLiteral();
+            }
+        }
+    }
+
+    private void consumeStringLiteral() {
+        while (byteBuffer.hasRemaining()) {
+            final byte at = byteBuffer.get();
+            if (at == '"') {
+                return;
+            }
+            if (at == '\\' && byteBuffer.hasRemaining()) {
+                byteBuffer.get();
             }
         }
     }
@@ -200,7 +213,7 @@ public final class JsonDecoder {
                 byteBuffer.get();
             }
 
-            int result = 0;
+            long result = 0;
             while (byteBuffer.hasRemaining() && isNumber(byteBuffer.get(byteBuffer.position()))) {
                 byte at = byteBuffer.get();
                 result = 10 * result + at - '0';
@@ -208,13 +221,19 @@ public final class JsonDecoder {
 
             double remainder = 0;
             if (byteBuffer.hasRemaining() && byteBuffer.get(byteBuffer.position()) == '.') {
-                int divisor = 10;
                 byteBuffer.get();
+                long fractionDigits = 0;
+                int fractionLength = 0;
                 while (byteBuffer.hasRemaining() && isNumber(byteBuffer.get(byteBuffer.position()))) {
-                    byte at = byteBuffer.get();
-                    remainder += (double) (at - '0') / divisor;
-                    divisor *= 10;
+                    final byte at = byteBuffer.get();
+                    // Digits past long precision cannot change the double result, so they are skipped to
+                    // keep fractionDigits from overflowing.
+                    if (fractionLength < AsciiEncoding.LONG_MAX_DIGITS - 1) {
+                        fractionDigits = 10 * fractionDigits + at - '0';
+                        fractionLength++;
+                    }
                 }
+                remainder = fractionDigits / (double) AsciiEncoding.LONG_POW_10[fractionLength];
             }
 
             return sign ? -(result + remainder) : result + remainder;

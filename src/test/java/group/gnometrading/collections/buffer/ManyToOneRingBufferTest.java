@@ -1051,4 +1051,31 @@ class ManyToOneRingBufferTest {
         buffer.read(msg -> count.incrementAndGet());
         assertEquals(3, count.get());
     }
+
+    @Test
+    void testReadResumesAfterConsumerThrowsMidBatch() {
+        ManyToOneRingBuffer<TestMessage> buffer = new ManyToOneRingBuffer<>(TestMessage[]::new, TestMessage::new, 4);
+        for (int i = 1; i <= 3; i++) {
+            int index = buffer.tryClaim();
+            buffer.indexAt(index).setValue(i);
+            buffer.commit(index);
+        }
+
+        List<Long> seen = new ArrayList<>();
+        assertThrows(
+                IllegalStateException.class,
+                () -> buffer.read(message -> {
+                    if (message.getValue() == 2) {
+                        throw new IllegalStateException("boom");
+                    }
+                    seen.add(message.getValue());
+                }));
+
+        buffer.read(message -> seen.add(message.getValue()));
+        assertEquals(List.of(1L, 3L), seen);
+
+        for (int i = 0; i < 4; i++) {
+            assertNotEquals(-1, buffer.tryClaim());
+        }
+    }
 }

@@ -70,18 +70,22 @@ public final class ManyToOneRingBuffer<T> implements RingBuffer<T> {
 
         final int toRead = (int) Math.min(available, limit);
 
-        for (int i = 0; i < toRead; i++) {
-            final int index = (int) (currentHead & mask);
-            if (slotStates.get(index) != PUBLISHED) {
-                break;
+        // Slots are cleared before head advances, so head must be published even if the consumer throws
+        // or every later read would stall on the cleared slot.
+        try {
+            for (int i = 0; i < toRead; i++) {
+                final int index = (int) (currentHead & mask);
+                if (slotStates.get(index) != PUBLISHED) {
+                    break;
+                }
+
+                slotStates.set(index, EMPTY);
+                currentHead++;
+                consumer.accept(buffer[index]);
             }
-
-            consumer.accept(buffer[index]);
-            slotStates.set(index, EMPTY);
-            currentHead++;
+        } finally {
+            this.head.set(currentHead);
         }
-
-        this.head.set(currentHead);
     }
 
     @Override

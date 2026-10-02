@@ -84,7 +84,9 @@ class JsonDecoderTest {
                 Arguments.of("1.1", 1.1),
                 Arguments.of("10005.1042314", 10005.1042314),
                 Arguments.of("0.000005", 0.000005),
-                Arguments.of("-0.000005", -0.000005));
+                Arguments.of("-0.000005", -0.000005),
+                Arguments.of("3000000000.5", 3000000000.5),
+                Arguments.of("0.12345678901234567890123456789012345", 0.12345678901234568));
     }
 
     @ParameterizedTest
@@ -194,6 +196,27 @@ class JsonDecoderTest {
         payload = "{\"key\": false]";
         node = jsonDecoder.wrap(ByteBuffer.wrap(payload.getBytes()));
         assertFalse(node.asObject().nextKey().asBoolean());
+    }
+
+    @Test
+    public void testSkipsUnreadStringValuesContainingStructuralCharacters() {
+        String payload = "{\"msg\": \"a, {b}] \\\" [c\", \"nested\": {\"s\": \"}],\"}, \"x\": 5}";
+        JsonDecoder jsonDecoder = new JsonDecoder();
+        try (final var node = jsonDecoder.wrap(ByteBuffer.wrap(payload.getBytes()))) {
+            try (final var obj = node.asObject()) {
+                try (final var msg = obj.nextKey()) {
+                    assertTrue(msg.getName().equals("msg"));
+                }
+                try (final var nested = obj.nextKey()) {
+                    assertTrue(nested.getName().equals("nested"));
+                }
+                try (final var x = obj.nextKey()) {
+                    assertTrue(x.getName().equals("x"));
+                    assertEquals(5, x.asInt());
+                }
+                assertFalse(obj.hasNextKey());
+            }
+        }
     }
 
     @Test

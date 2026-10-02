@@ -39,12 +39,15 @@ public final class Schedule {
      */
     public void check() {
         final long now = clock.time();
-        if (now >= nextFireTime) {
+        final long firedFor = nextFireTime;
+        if (now >= firedFor) {
             try {
                 task.run();
             } finally {
-                // Ensure we always move forward, even if the task threw
-                nextFireTime = now + repeatMillis;
+                // A forceTrigger() from another thread while the task ran must survive the reschedule.
+                if (nextFireTime == firedFor) {
+                    nextFireTime = now + repeatMillis;
+                }
             }
         }
     }

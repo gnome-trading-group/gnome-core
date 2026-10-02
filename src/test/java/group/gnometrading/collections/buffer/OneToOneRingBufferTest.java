@@ -617,4 +617,31 @@ class OneToOneRingBufferTest {
         buffer.read(msg -> count.incrementAndGet());
         assertEquals(2, count.get(), "index1 and index2 should now be readable");
     }
+
+    @Test
+    void testReadResumesAfterConsumerThrowsMidBatch() {
+        OneToOneRingBuffer<TestMessage> buffer = new OneToOneRingBuffer<>(TestMessage[]::new, TestMessage::new, 4);
+        for (int i = 1; i <= 3; i++) {
+            int index = buffer.tryClaim();
+            buffer.indexAt(index).setValue(i);
+            buffer.commit(index);
+        }
+
+        List<Integer> seen = new ArrayList<>();
+        assertThrows(
+                IllegalStateException.class,
+                () -> buffer.read(message -> {
+                    if (message.getValue() == 2) {
+                        throw new IllegalStateException("boom");
+                    }
+                    seen.add(message.getValue());
+                }));
+
+        buffer.read(message -> seen.add(message.getValue()));
+        assertEquals(List.of(1, 3), seen);
+
+        for (int i = 0; i < 4; i++) {
+            assertNotEquals(-1, buffer.tryClaim());
+        }
+    }
 }

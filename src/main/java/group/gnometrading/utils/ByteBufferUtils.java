@@ -133,22 +133,20 @@ public final class ByteBufferUtils {
 
         final long y;
         int length;
-        final int digitCount;
 
         if (value < 0) {
-            digitCount = digitCount(Math.round(-value));
             y = Math.round(LONG_POW_10[scale] * -value);
             buffer.put((byte) '-');
-
-            length = 1 + digitCount;
+            length = 1;
         } else {
-            digitCount = digitCount(Math.round(value));
             y = Math.round(LONG_POW_10[scale] * value);
-            length = digitCount;
+            length = 0;
         }
 
-        long integerPart = y / LONG_POW_10[scale];
-        long fractionalPart = y % LONG_POW_10[scale];
+        final long integerPart = y / LONG_POW_10[scale];
+        final long fractionalPart = y % LONG_POW_10[scale];
+        final int digitCount = digitCount(integerPart);
+        length += digitCount;
 
         putPositiveLongAscii(buffer, integerPart, digitCount);
         if (scale > 0) {
