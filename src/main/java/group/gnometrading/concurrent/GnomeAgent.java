@@ -22,4 +22,12 @@ public interface GnomeAgent {
     default String roleName() {
         return this.getClass().getSimpleName();
     }
+
+    /**
+     * How latency-sensitive this agent's thread is. Defaults to {@link ThreadProfile#BACKGROUND} so an
+     * agent nobody has classified sleeps when idle instead of claiming a scarce isolated core.
+     */
+    default ThreadProfile threadProfile() {
+        return ThreadProfile.BACKGROUND;
+    }
 }

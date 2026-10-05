@@ -2,6 +2,7 @@ package group.gnometrading.concurrent;
 
 import java.util.concurrent.atomic.AtomicReference;
 import org.agrona.ErrorHandler;
+import org.agrona.concurrent.IdleStrategy;
 
 public final class GnomeAgentRunner implements Runnable, AutoCloseable {
 
@@ -13,6 +14,8 @@ public final class GnomeAgentRunner implements Runnable, AutoCloseable {
     private final GnomeAgent agent;
     private final ErrorHandler errorHandler;
     private final AtomicReference<Thread> thread = new AtomicReference<>();
+    // Assigned on the agent's own thread when run() starts, before the work loop reads it.
+    private IdleStrategy idleStrategy;
 
     public GnomeAgentRunner(GnomeAgent agent, ErrorHandler errorHandler) {
         this.agent = agent;
@@ -45,6 +48,8 @@ public final class GnomeAgentRunner implements Runnable, AutoCloseable {
                 return;
             }
 
+            this.idleStrategy = AgentRuntime.attach(this.agent);
+
             try {
                 this.agent.onStart();
             } catch (Throwable e) {
@@ -66,16 +71,17 @@ public final class GnomeAgentRunner implements Runnable, AutoCloseable {
 
     private void workLoop() {
         while (this.running) {
-            this.doWork();
+            this.idleStrategy.idle(this.doWork());
         }
     }
 
-    private void doWork() {
+    private int doWork() {
         try {
             int workCount = agent.doWork();
             if (workCount <= 0 && Thread.currentThread().isInterrupted()) {
                 this.running = false;
             }
+            return workCount;
         } catch (InterruptedException e) {
             this.running = false;
             Thread.currentThread().interrupt();
@@ -90,6 +96,7 @@ public final class GnomeAgentRunner implements Runnable, AutoCloseable {
                 this.running = false;
             }
         }
+        return 0;
     }
 
     private void handleError(Throwable error) {
