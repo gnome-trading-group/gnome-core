@@ -59,6 +59,37 @@ class GnomeAgentRunnerTest {
     }
 
     @Test
+    void cyclesAdvanceWhileTheAgentLoopsAndFreezeWhileItIsStuck() throws Exception {
+        CountDownLatch stuck = new CountDownLatch(1);
+        CountDownLatch release = new CountDownLatch(1);
+        int[] calls = {0};
+        when(mockAgent.doWork()).thenAnswer(invocation -> {
+            if (++calls[0] == 1000) {
+                stuck.countDown();
+                release.await();
+            }
+            return 0;
+        });
+
+        assertEquals(0, runner.cycles());
+        GnomeAgentRunner.startOnThread(runner);
+        assertTrue(stuck.await(5, TimeUnit.SECONDS));
+
+        long frozen = runner.cycles();
+        assertEquals(999, frozen);
+        Thread.sleep(50);
+        assertEquals(frozen, runner.cycles());
+
+        release.countDown();
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
+        while (runner.cycles() == frozen && System.nanoTime() < deadline) {
+            Thread.onSpinWait();
+        }
+        assertTrue(runner.cycles() > frozen);
+        runner.close();
+    }
+
+    @Test
     void testRunLifecycle() throws Exception {
         when(mockAgent.doWork()).thenReturn(1);
 

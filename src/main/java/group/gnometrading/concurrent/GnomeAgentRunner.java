@@ -1,5 +1,7 @@
 package group.gnometrading.concurrent;
 
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
 import java.util.concurrent.atomic.AtomicReference;
 import org.agrona.ErrorHandler;
 import org.agrona.concurrent.IdleStrategy;
@@ -7,6 +9,16 @@ import org.agrona.concurrent.IdleStrategy;
 public final class GnomeAgentRunner implements Runnable, AutoCloseable {
 
     public static final Thread TOMBSTONE = new Thread();
+
+    private static final VarHandle CYCLES;
+
+    static {
+        try {
+            CYCLES = MethodHandles.lookup().findVarHandle(GnomeAgentRunner.class, "cycles", long.class);
+        } catch (ReflectiveOperationException e) {
+            throw new ExceptionInInitializerError(e);
+        }
+    }
 
     private volatile boolean running = true;
     private volatile boolean closed = false;
@@ -16,6 +28,9 @@ public final class GnomeAgentRunner implements Runnable, AutoCloseable {
     private final AtomicReference<Thread> thread = new AtomicReference<>();
     // Assigned on the agent's own thread when run() starts, before the work loop reads it.
     private IdleStrategy idleStrategy;
+    // Passes of the work loop, idle ones included, so a count that stops advancing means the agent is stuck. Written
+    // only by the agent's thread with a release store: no fence on the hot path, and readers never see a torn value.
+    private long cycles;
 
     public GnomeAgentRunner(GnomeAgent agent, ErrorHandler errorHandler) {
         this.agent = agent;
@@ -39,6 +54,11 @@ public final class GnomeAgentRunner implements Runnable, AutoCloseable {
 
     public boolean isClosed() {
         return closed;
+    }
+
+    /** Passes of the work loop so far; safe to read from any thread. */
+    public long cycles() {
+        return (long) CYCLES.getOpaque(this);
     }
 
     @Override
@@ -72,6 +92,7 @@ public final class GnomeAgentRunner implements Runnable, AutoCloseable {
     private void workLoop() {
         while (this.running) {
             this.idleStrategy.idle(this.doWork());
+            CYCLES.setRelease(this, this.cycles + 1);
         }
     }
 
