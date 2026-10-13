@@ -1,11 +1,11 @@
 package group.gnometrading.strings;
 
 import group.gnometrading.utils.ArrayCopy;
+import group.gnometrading.utils.AsciiParsing;
 
 public class ViewString implements GnomeString {
 
     private static final byte[] NULL_BUF = new byte[1];
-    private static final byte CASE_DIFF = 0x20;
 
     protected int hash;
     protected int length;
@@ -49,17 +49,8 @@ public class ViewString implements GnomeString {
             return false;
         }
 
-        int localIdx = offset;
         for (int i = 0; i < length; i++) {
-            byte b1 = this.bytes[localIdx + i];
-            byte b2 = (byte) other.charAt(i);
-
-            if (b1 != b2) {
-                if ((CASE_DIFF + b1) == b2) {
-                    continue;
-                } else if (b1 == (CASE_DIFF + b2)) {
-                    continue;
-                }
+            if (AsciiParsing.toLowerCase(this.bytes[offset + i]) != AsciiParsing.toLowerCase((byte) other.charAt(i))) {
                 return false;
             }
         }
@@ -79,17 +70,8 @@ public class ViewString implements GnomeString {
             return false;
         }
 
-        int localIdx = offset;
         for (int i = 0; i < length; i++) {
-            byte b1 = this.bytes[localIdx + i];
-            byte b2 = other.byteAt(i);
-
-            if (b1 != b2) {
-                if ((CASE_DIFF + b1) == b2) {
-                    continue;
-                } else if (b1 == (CASE_DIFF + b2)) {
-                    continue;
-                }
+            if (AsciiParsing.toLowerCase(this.bytes[offset + i]) != AsciiParsing.toLowerCase(other.byteAt(i))) {
                 return false;
             }
         }

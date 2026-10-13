@@ -64,6 +64,18 @@ class ViewStringTest {
         assertEquals(equals, viewString.equalsIgnoreCase(other));
     }
 
+    @Test
+    void equalsIgnoreCaseFoldsLettersOnly() {
+        // Each pair differs only by the case bit, but only letters have case.
+        assertFalse(new ViewString("retry-after").equalsIgnoreCase("retry\rafter"));
+        assertFalse(new ViewString("@").equalsIgnoreCase("`"));
+        assertFalse(new ViewString("[").equalsIgnoreCase("{"));
+        assertFalse(new ViewString("@").equalsIgnoreCase(new ViewString("`")));
+        assertFalse(new ViewString("\u0001").equalsIgnoreCase(new ViewString("!")));
+        assertTrue(new ViewString("Retry-After").equalsIgnoreCase("rETRY-aFTER"));
+        assertTrue(new ViewString("Z@[").equalsIgnoreCase(new ViewString("z@[")));
+    }
+
     private static Stream<Arguments> testViewStringEqualsArguments() {
         return Stream.of(
                 Arguments.of(new ViewString(), null, false),

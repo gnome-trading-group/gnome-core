@@ -68,6 +68,34 @@ public final class AsciiParsing {
         return -1;
     }
 
+    /** Where {@code pattern} first appears, byte for byte, in the range; -1 if it doesn't. */
+    public static int indexOf(final ByteBuffer buffer, final int start, final int end, final byte[] pattern) {
+        for (int i = start; i + pattern.length <= end; i++) {
+            if (matchesAt(buffer, i, pattern)) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    private static boolean matchesAt(final ByteBuffer buffer, final int at, final byte[] pattern) {
+        for (int j = 0; j < pattern.length; j++) {
+            if (buffer.get(at + j) != pattern[j]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /** The first index in the range that isn't a digit; {@code end} if there is none. */
+    public static int skipDigits(final ByteBuffer buffer, final int start, final int end) {
+        int index = start;
+        while (index < end && isDigit(buffer.get(index))) {
+            index++;
+        }
+        return index;
+    }
+
     /** The first index in the range that isn't a space or tab; {@code end} if there is none. */
     public static int skipSpacesAndTabs(final ByteBuffer buffer, final int start, final int end) {
         int index = start;
@@ -129,5 +157,37 @@ public final class AsciiParsing {
             value = value * RADIX + digit;
         }
         return value;
+    }
+
+    /**
+     * The range as a non-negative decimal, such as {@code 5}, {@code 5.} or {@code 5.25}, times {@code scale}: with a
+     * scale of 100, {@code 5.25} is 525. Digits finer than the scale can hold are dropped, not rounded.
+     *
+     * @param scale a power of ten
+     * @return the scaled value, or {@code invalid} if the range has no whole digits, holds anything but digits and one
+     *     point, or overflows a long
+     */
+    public static long parseNaturalFixedPoint(
+            final ByteBuffer buffer, final int start, final int end, final long scale, final long invalid) {
+        final int point = skipDigits(buffer, start, end);
+        if (point == start || (point < end && buffer.get(point) != '.')) {
+            return invalid;
+        }
+        final long whole = parseNaturalLong(buffer, start, point, -1);
+        if (whole < 0 || whole > Long.MAX_VALUE / scale) {
+            return invalid;
+        }
+        long fraction = 0;
+        long place = scale / RADIX;
+        for (int i = point + 1; i < end; i++) {
+            final byte at = buffer.get(i);
+            if (!isDigit(at)) {
+                return invalid;
+            }
+            fraction += (at - '0') * place;
+            place /= RADIX;
+        }
+        final long scaled = whole * scale;
+        return scaled > Long.MAX_VALUE - fraction ? invalid : scaled + fraction;
     }
 }
