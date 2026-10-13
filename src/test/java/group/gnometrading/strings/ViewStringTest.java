@@ -177,8 +177,8 @@ class ViewStringTest {
 
     private static Stream<Arguments> testToFixedPointLongArguments() {
         return Stream.of(
-                Arguments.of(new ViewString("0"), 0, 0),
-                Arguments.of(new ViewString("1"), 0, 0),
+                Arguments.of(new ViewString("0"), 0, 1),
+                Arguments.of(new ViewString("1"), 1, 1),
                 Arguments.of(new ViewString("1"), 1_000, 1_000),
                 Arguments.of(new ViewString("-1.0"), -1_000, 1_000),
                 Arguments.of(new ViewString("-1.1234"), -1_123, 1_000),
@@ -193,7 +193,19 @@ class ViewStringTest {
 
     @Test
     void testToFixedPointLongExceptions() {
-        assertThrows(NumberFormatException.class, () -> new ViewString().toFixedPointLong(0));
-        assertThrows(NumberFormatException.class, () -> new ViewString("aaa").toFixedPointLong(0));
+        assertThrows(NumberFormatException.class, () -> new ViewString().toFixedPointLong(1));
+        assertThrows(NumberFormatException.class, () -> new ViewString("aaa").toFixedPointLong(1));
+        assertThrows(NumberFormatException.class, () -> new ViewString("1-2").toFixedPointLong(1));
+        assertThrows(NumberFormatException.class, () -> new ViewString("1.2.3").toFixedPointLong(1));
+        assertThrows(IllegalArgumentException.class, () -> new ViewString("1").toFixedPointLong(0));
+    }
+
+    @Test
+    void testToFixedPointLongWithInvalidValue() {
+        assertEquals(-7, new ViewString("").toFixedPointLong(100, -7));
+        assertEquals(-7, new ViewString("n/a").toFixedPointLong(100, -7));
+        assertEquals(1, new ViewString("1e-05").toFixedPointLong(100_000, -7));
+        final byte[] message = "{\"p\":\"0.42\"}".getBytes(java.nio.charset.StandardCharsets.US_ASCII);
+        assertEquals(42, new ViewString(message, 6, 4).toFixedPointLong(100, -7));
     }
 }

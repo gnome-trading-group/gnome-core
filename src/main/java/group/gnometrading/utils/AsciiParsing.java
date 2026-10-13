@@ -10,6 +10,10 @@ public final class AsciiParsing {
 
     private static final byte LOWERCASE_BIT = 0x20;
     private static final int RADIX = 10;
+    // Exponents are capped well past where any digit could land inside a long, so the arithmetic can't overflow.
+    private static final long MAX_EXPONENT = 1_000;
+    private static final long NO_EXPONENT = Long.MIN_VALUE;
+    private static final int MAX_POWER = 18;
 
     private AsciiParsing() {}
 
@@ -189,5 +193,109 @@ public final class AsciiParsing {
         }
         final long scaled = whole * scale;
         return scaled > Long.MAX_VALUE - fraction ? invalid : scaled + fraction;
+    }
+
+    /**
+     * The range as a decimal times {@code scale}, as venues send prices and sizes: an optional leading {@code -}, digits
+     * with at most one point ({@code 5}, {@code 5.}, {@code .5}, {@code 5.25}), and an optional exponent ({@code 1e-05},
+     * {@code 2.5E+3}). Digits finer than the scale can hold are dropped, toward zero, not rounded.
+     *
+     * @param scale a power of ten
+     * @return the scaled value, or {@code invalid} if the range is empty, holds anything else, or overflows a long
+     */
+    public static long parseFixedPoint(
+            final byte[] bytes, final int start, final int end, final long scale, final long invalid) {
+        final int scaleDigits = powerOfTen(scale);
+        final boolean negative = start < end && bytes[start] == '-';
+        final int digitsStart = negative ? start + 1 : start;
+        final int mantissaEnd = mantissaEnd(bytes, digitsStart, end);
+        final int point = indexOfPoint(bytes, digitsStart, mantissaEnd);
+        if (mantissaEnd - digitsStart - (point < 0 ? 0 : 1) == 0) {
+            return invalid;
+        }
+        final long exponent = mantissaEnd == end ? 0 : parseExponent(bytes, mantissaEnd, end);
+        if (exponent == NO_EXPONENT) {
+            return invalid;
+        }
+        final int wholeEnd = point < 0 ? mantissaEnd : point;
+        final long magnitude = scaledDigits(bytes, digitsStart, mantissaEnd, wholeEnd, scaleDigits + exponent);
+        if (magnitude < 0) {
+            return invalid;
+        }
+        return negative ? -magnitude : magnitude;
+    }
+
+    /** Where the digits, and at most one point among them, end. */
+    private static int mantissaEnd(final byte[] bytes, final int start, final int end) {
+        boolean seenPoint = false;
+        int index = start;
+        while (index < end && (isDigit(bytes[index]) || (bytes[index] == '.' && !seenPoint))) {
+            seenPoint |= bytes[index] == '.';
+            index++;
+        }
+        return index;
+    }
+
+    private static int indexOfPoint(final byte[] bytes, final int start, final int end) {
+        for (int i = start; i < end; i++) {
+            if (bytes[i] == '.') {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    /** {@code e} or {@code E}, an optional sign, then digits filling the rest of the range; else {@link #NO_EXPONENT}. */
+    private static long parseExponent(final byte[] bytes, final int start, final int end) {
+        if (bytes[start] != 'e' && bytes[start] != 'E') {
+            return NO_EXPONENT;
+        }
+        final int sign = start + 1;
+        final boolean signed = sign < end && (bytes[sign] == '-' || bytes[sign] == '+');
+        final long exponent = parseNaturalLong(bytes, signed ? sign + 1 : sign, end, -1);
+        if (exponent < 0) {
+            return NO_EXPONENT;
+        }
+        final long capped = Math.min(MAX_EXPONENT, exponent);
+        return signed && bytes[sign] == '-' ? -capped : capped;
+    }
+
+    /**
+     * The digits in the range, skipping the point, each worth its place shifted by {@code shift} powers of ten: the
+     * last whole digit (just before {@code wholeEnd}) is worth 10^shift. Negative on overflow.
+     */
+    private static long scaledDigits(
+            final byte[] bytes, final int start, final int end, final int wholeEnd, final long shift) {
+        long value = 0;
+        for (int i = start; i < end; i++) {
+            if (bytes[i] == '.') {
+                continue;
+            }
+            // The last whole digit is the units; the first after the point is tenths.
+            final long place = (i < wholeEnd ? wholeEnd - 1 - i : wholeEnd - i) + shift;
+            final long add = digitValue(bytes[i] - '0', place);
+            if (add < 0 || value > Long.MAX_VALUE - add) {
+                return -1;
+            }
+            value += add;
+        }
+        return value;
+    }
+
+    /** {@code digit} at 10^{@code place}: 0 below the units of the scale, negative if it can't fit a long. */
+    private static long digitValue(final int digit, final long place) {
+        if (digit == 0 || place < 0) {
+            return 0;
+        }
+        return place > MAX_POWER ? -1 : digit * AsciiEncoding.LONG_POW_10[(int) place];
+    }
+
+    private static int powerOfTen(final long scale) {
+        for (int power = 0; power <= MAX_POWER; power++) {
+            if (AsciiEncoding.LONG_POW_10[power] == scale) {
+                return power;
+            }
+        }
+        throw new IllegalArgumentException("Scale must be a power of ten: " + scale);
     }
 }

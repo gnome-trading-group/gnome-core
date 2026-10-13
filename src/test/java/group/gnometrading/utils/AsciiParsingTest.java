@@ -179,6 +179,89 @@ class AsciiParsingTest {
         return sink;
     }
 
+    @ParameterizedTest
+    @CsvSource({
+        "5, 100, 500",
+        "5., 100, 500",
+        ".5, 100, 50",
+        "5.25, 100, 525",
+        "5.259, 100, 525",
+        "-5.259, 100, -525",
+        "-0.01, 100, -1",
+        "0.0800, 1000000000, 80000000",
+        "1e-05, 1000000000, 10000",
+        "1E-05, 1000000000, 10000",
+        "2.5e+3, 1, 2500",
+        "2.5e3, 100, 250000",
+        "1e-30, 1000000000, 0",
+        "0e999, 1, 0",
+        "007, 1, 7",
+        "300.00, 100, 30000",
+        "92233720368547758.07, 100, 9223372036854775807",
+        "-92233720368547758.07, 100, -9223372036854775807",
+    })
+    void parsesDecimalsAsVenuesSendThem(final String text, final long scale, final long expected) {
+        assertEquals(expected, AsciiParsing.parseFixedPoint(ascii(text), 0, text.length(), scale, -7));
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "''",
+        "-",
+        ".",
+        "-.",
+        "+5",
+        "1-2",
+        "1.2.3",
+        "'5,'",
+        "abc",
+        "5a",
+        "1e",
+        "1e+",
+        "e5",
+        "1e5.5",
+        "1e-",
+        "92233720368547758.08",
+        "1e19",
+        "99999999999999999999"
+    })
+    void returnsInvalidForAnythingElse(final String text) {
+        assertEquals(-7, AsciiParsing.parseFixedPoint(ascii(text), 0, text.length(), 100, -7));
+    }
+
+    @Test
+    void fixedPointParsesOnlyTheRangeOfAnArray() {
+        final byte[] bytes = ascii("{\"px\":\"-1.5e2\"}");
+
+        assertEquals(-15_000, AsciiParsing.parseFixedPoint(bytes, 7, 13, 100, -7));
+    }
+
+    @Test
+    void fixedPointScaleMustBeAPowerOfTen() {
+        assertThrows(IllegalArgumentException.class, () -> AsciiParsing.parseFixedPoint(ascii("1"), 0, 1, 250, -1));
+    }
+
+    @Test
+    void parsingFixedPointDoesNotAllocate() {
+        final com.sun.management.ThreadMXBean threads =
+                (com.sun.management.ThreadMXBean) java.lang.management.ManagementFactory.getThreadMXBean();
+        final long threadId = Thread.currentThread().getId();
+        final byte[] bytes = ascii("-12.5e-1");
+
+        long sink = 0;
+        for (int i = 0; i < 10_000; i++) {
+            sink += AsciiParsing.parseFixedPoint(bytes, 0, bytes.length, 1_000_000, 0);
+        }
+        final long before = threads.getThreadAllocatedBytes(threadId);
+        for (int i = 0; i < 10_000; i++) {
+            sink += AsciiParsing.parseFixedPoint(bytes, 0, bytes.length, 1_000_000, 0);
+        }
+        final long allocated = threads.getThreadAllocatedBytes(threadId) - before;
+
+        assertEquals(20_000L * -1_250_000, sink);
+        assertTrue(allocated < 1024, "allocated " + allocated + " bytes over 10,000 parses");
+    }
+
     private static ByteBuffer buffer(final String text) {
         return ByteBuffer.wrap(ascii(text));
     }

@@ -235,36 +235,17 @@ public class ViewString implements GnomeString {
 
     @Override
     public final long toFixedPointLong(final long scalingFactor) {
-        if (this.length == 0) {
-            throw new NumberFormatException("Empty string");
+        final long value = AsciiParsing.parseFixedPoint(
+                this.bytes, this.offset, this.offset + this.length, scalingFactor, Long.MIN_VALUE);
+        if (value == Long.MIN_VALUE) {
+            throw new NumberFormatException("Not a decimal: " + this);
         }
+        return value;
+    }
 
-        long result = 0;
-        boolean isNegative = false;
-        boolean inFraction = false;
-        long fractionalMultiplier = scalingFactor;
-
-        for (int i = 0; i < this.length; i++) {
-            final byte at = this.byteAt(i);
-
-            if (at == '-') {
-                isNegative = true;
-            } else if (at == '.') {
-                inFraction = true;
-            } else if (at >= '0' && at <= '9') {
-                final int digit = at - '0';
-                if (inFraction) {
-                    fractionalMultiplier /= 10;
-                    result += digit * fractionalMultiplier;
-                } else {
-                    result = result * 10 + digit * scalingFactor;
-                }
-            } else {
-                throw new NumberFormatException("Invalid character: " + at);
-            }
-        }
-
-        return isNegative ? -result : result;
+    @Override
+    public final long toFixedPointLong(final long scalingFactor, final long invalid) {
+        return AsciiParsing.parseFixedPoint(this.bytes, this.offset, this.offset + this.length, scalingFactor, invalid);
     }
 
     @Override
