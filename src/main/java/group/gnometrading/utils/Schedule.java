@@ -1,5 +1,6 @@
 package group.gnometrading.utils;
 
+import java.util.concurrent.atomic.AtomicLong;
 import org.agrona.concurrent.EpochClock;
 
 public final class Schedule {
@@ -8,6 +9,10 @@ public final class Schedule {
     private final Runnable task;
 
     private volatile long nextFireTime;
+    // Kept apart from the timer so nothing check() writes can erase a request: a force made while the task runs,
+    // even one forced itself, is still pending at the next check.
+    private final AtomicLong forceRequests = new AtomicLong();
+    private volatile long forceRequestsHandled;
 
     public Schedule(EpochClock clock, long repeatMillis, Runnable task) {
         if (repeatMillis <= 0) {
@@ -30,7 +35,7 @@ public final class Schedule {
      * Forces the schedule to fire on the next check.
      */
     public void forceTrigger() {
-        this.nextFireTime = 0;
+        this.forceRequests.incrementAndGet();
     }
 
     /**
@@ -39,15 +44,13 @@ public final class Schedule {
      */
     public void check() {
         final long now = clock.time();
-        final long firedFor = nextFireTime;
-        if (now >= firedFor) {
+        final long requests = this.forceRequests.get();
+        if (now >= this.nextFireTime || requests != this.forceRequestsHandled) {
+            this.forceRequestsHandled = requests;
             try {
                 task.run();
             } finally {
-                // A forceTrigger() from another thread while the task ran must survive the reschedule.
-                if (nextFireTime == firedFor) {
-                    nextFireTime = now + repeatMillis;
-                }
+                this.nextFireTime = now + repeatMillis;
             }
         }
     }
@@ -56,6 +59,9 @@ public final class Schedule {
      * @return time in millis until the next scheduled run
      */
     public long millisUntilNext() {
+        if (this.forceRequests.get() != this.forceRequestsHandled) {
+            return 0;
+        }
         final long now = clock.time();
         return Math.max(0, nextFireTime - now);
     }

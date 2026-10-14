@@ -3,6 +3,7 @@ package group.gnometrading.utils;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.agrona.concurrent.EpochClock;
 import org.junit.jupiter.api.BeforeEach;
@@ -368,6 +369,69 @@ class ScheduleTest {
         assertEquals(2, runs.get());
     }
 
+    /** A forced run must not swallow a force made while it runs: that was a reconnect request lost. */
+    @Test
+    void testForceTriggerDuringAForcedRunIsNotLost() {
+        when(mockClock.time()).thenReturn(1000L);
+
+        final Schedule[] holder = new Schedule[1];
+        final AtomicInteger runs = new AtomicInteger();
+        Schedule schedule = new Schedule(mockClock, 500, () -> {
+            if (runs.incrementAndGet() == 1) {
+                holder[0].forceTrigger();
+            }
+        });
+        holder[0] = schedule;
+        schedule.start();
+        schedule.forceTrigger();
+
+        schedule.check();
+        assertEquals(0, schedule.millisUntilNext(), "the force made during the run is still pending");
+        schedule.check();
+
+        assertEquals(2, runs.get());
+    }
+
+    @Test
+    void testForcesBeforeOneCheckFireOnce() {
+        when(mockClock.time()).thenReturn(1000L);
+
+        Schedule schedule = new Schedule(mockClock, 500, mockTask);
+        schedule.start();
+        schedule.forceTrigger();
+        schedule.forceTrigger();
+        schedule.check();
+        schedule.check();
+
+        verify(mockTask, times(1)).run();
+    }
+
+    /** Forces from another thread, racing the checks: once they stop, one more check leaves none pending. */
+    @Test
+    void testForcesFromAnotherThreadAreNeverLost() throws Exception {
+        final AtomicInteger runs = new AtomicInteger();
+        final Schedule schedule = new Schedule(() -> 1000L, 1_000_000, runs::incrementAndGet);
+        schedule.start();
+
+        final CountDownLatch done = new CountDownLatch(1);
+        final Thread forcer = new Thread(() -> {
+            for (int i = 0; i < 20_000; i++) {
+                schedule.forceTrigger();
+                Thread.onSpinWait();
+            }
+            done.countDown();
+        });
+        forcer.start();
+        while (done.getCount() > 0) {
+            schedule.check();
+        }
+        forcer.join();
+        schedule.check();
+
+        assertTrue(runs.get() > 0);
+        assertEquals(1_000_000, schedule.millisUntilNext(), "every force was handled; only the timer is left");
+    }
+
     @Test
     void testForceTriggerAfterStart() {
         when(mockClock.time()).thenReturn(1000L, 1200L, 1200L);
@@ -475,7 +539,7 @@ class ScheduleTest {
     }
 
     @Test
-    void testForceTriggerSetsNextFireTimeToZero() {
+    void testForceTriggerMakesTheScheduleDueNow() {
         when(mockClock.time()).thenReturn(1000L, 1000L);
 
         Schedule schedule = new Schedule(mockClock, 500, mockTask);

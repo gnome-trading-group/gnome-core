@@ -370,6 +370,20 @@ class GnomeAgentRunnerTest {
         assertTrue(runner.isClosed());
     }
 
+    /** A stop ends the loop and closes the agent quietly: the error handler may exit the process. */
+    @Test
+    void agentStoppedEndsTheLoopWithoutReportingAnError() throws Exception {
+        when(mockAgent.doWork()).thenThrow(new AgentStoppedException("stopped") {});
+
+        Thread thread = new Thread(runner);
+        thread.start();
+        thread.join(1000);
+
+        assertTrue(runner.isClosed());
+        verify(mockAgent).onClose();
+        verify(mockErrorHandler, never()).onError(any());
+    }
+
     @Test
     void testErrorDuringWorkWithInterruption() throws Exception {
         RuntimeException workException = new RuntimeException("Work failed");

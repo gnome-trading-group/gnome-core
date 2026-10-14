@@ -106,6 +106,8 @@ public final class GnomeAgentRunner implements Runnable, AutoCloseable {
         } catch (InterruptedException e) {
             this.running = false;
             Thread.currentThread().interrupt();
+        } catch (AgentStoppedException e) {
+            this.running = false;
         } catch (Throwable e) {
             if (Thread.currentThread().isInterrupted()) {
                 this.running = false;
