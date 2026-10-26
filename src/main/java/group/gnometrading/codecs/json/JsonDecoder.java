@@ -280,6 +280,12 @@ public final class JsonDecoder {
                     && byteBuffer.get(byteBuffer.position() + 3) == 'l';
         }
 
+        /** Whether the value is an array, read without consuming it. */
+        public boolean isArray() {
+            consumeWhitespace();
+            return byteBuffer.hasRemaining() && byteBuffer.get(byteBuffer.position()) == '[';
+        }
+
         /**
          * Captures the raw JSON bytes of any value type (object, array, number, boolean, null)
          * and returns them as a string. Leaves the parser positioned immediately after the value

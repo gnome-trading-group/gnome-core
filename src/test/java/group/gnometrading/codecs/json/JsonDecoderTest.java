@@ -139,6 +139,27 @@ class JsonDecoderTest {
     }
 
     @Test
+    public void testIsArrayPeeksWithoutConsuming() {
+        JsonDecoder jsonDecoder = new JsonDecoder();
+
+        var node = jsonDecoder.wrap(ByteBuffer.wrap("  [{\"a\":1}]".getBytes()));
+        assertTrue(node.isArray());
+        try (var array = node.asArray();
+                var item = array.nextItem();
+                var obj = item.asObject();
+                var key = obj.nextKey()) {
+            assertEquals(1, key.asInt());
+        }
+
+        node = jsonDecoder.wrap(ByteBuffer.wrap("{\"a\":1}".getBytes()));
+        assertFalse(node.isArray());
+        try (var obj = node.asObject();
+                var key = obj.nextKey()) {
+            assertEquals(1, key.asInt());
+        }
+    }
+
+    @Test
     public void testNullValues() {
         JsonDecoder jsonDecoder = new JsonDecoder();
 
