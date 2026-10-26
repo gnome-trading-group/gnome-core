@@ -153,6 +153,7 @@ class JsonDecoderTest {
 
         node = jsonDecoder.wrap(ByteBuffer.wrap("{\"a\":1}".getBytes()));
         assertFalse(node.isArray());
+        assertTrue(node.isObject());
         try (var obj = node.asObject();
                 var key = obj.nextKey()) {
             assertEquals(1, key.asInt());
