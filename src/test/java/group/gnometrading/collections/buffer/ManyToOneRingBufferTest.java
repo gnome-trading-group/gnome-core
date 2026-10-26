@@ -1078,4 +1078,17 @@ class ManyToOneRingBufferTest {
             assertNotEquals(-1, buffer.tryClaim());
         }
     }
+
+    @Test
+    void testRemainingCountsClaimedUntilRead() {
+        ManyToOneRingBuffer<TestMessage> buffer = new ManyToOneRingBuffer<>(TestMessage[]::new, TestMessage::new, 4);
+        assertEquals(4, buffer.remaining());
+        int index = buffer.tryClaim();
+        assertEquals(3, buffer.remaining(), "a claimed slot is taken before it is committed");
+        buffer.commit(index);
+        buffer.tryClaim();
+        assertEquals(2, buffer.remaining());
+        buffer.read(message -> {});
+        assertEquals(3, buffer.remaining(), "only the committed slot was read");
+    }
 }

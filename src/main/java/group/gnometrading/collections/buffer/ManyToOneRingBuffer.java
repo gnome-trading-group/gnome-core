@@ -57,6 +57,13 @@ public final class ManyToOneRingBuffer<T> implements RingBuffer<T> {
     }
 
     @Override
+    public int remaining() {
+        // Head first: it only grows, so a stale head can only understate the room, never overstate it.
+        final long currentHead = head.get();
+        return (int) (capacity - (tail.get() - currentHead));
+    }
+
+    @Override
     public void commit(final int index) {
         slotStates.set(index, PUBLISHED);
     }

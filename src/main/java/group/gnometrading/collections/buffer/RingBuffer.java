@@ -13,6 +13,12 @@ public interface RingBuffer<T> extends Resettable {
     int tryClaim();
 
     /**
+     * How many more slots could be claimed now; a producer that must send several messages together checks this first.
+     * Only a lower bound while other producers claim concurrently.
+     */
+    int remaining();
+
+    /**
      * Returns the message at the given index. Called by the producer.
      *
      * @param index the index returned by tryClaim()
