@@ -7,6 +7,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -112,5 +113,34 @@ class JsonEncoderTest {
         consumer.accept(encoder);
         buffer.flip();
         assertEquals(result, StandardCharsets.UTF_8.decode(buffer).toString());
+    }
+
+    private static String encode(final Consumer<JsonEncoder> consumer) {
+        ByteBuffer buffer = ByteBuffer.allocate(1 << 12);
+        JsonEncoder encoder = new JsonEncoder();
+        encoder.wrap(buffer);
+        consumer.accept(encoder);
+        buffer.flip();
+        return StandardCharsets.UTF_8.decode(buffer).toString();
+    }
+
+    @Test
+    void stringsEscapeQuotesBackslashesAndControlCharacters() {
+        assertEquals(
+                "\"a\\\"b\\\\c\\nd\\re\\tf\\u0001\"", encode(encoder -> encoder.writeString("a\"b\\c\nd\re\tf\u0001")));
+    }
+
+    @Test
+    void stringsBeyondAsciiAreUtf8() {
+        String text = "32\u00b0C \u20ac \ud83d\ude80";
+        assertEquals("\"" + text + "\"", encode(encoder -> encoder.writeString(text)), "2, 3 and 4 byte characters");
+        assertEquals("\"a\ufffdb\"", encode(encoder -> encoder.writeString("a\ud83db")), "a lone surrogate");
+    }
+
+    @Test
+    void aGnomeStringsUtf8IsKeptAndItsControlCharactersEscaped() {
+        byte[] bytes = "32\u00b0C\n\"x\"".getBytes(StandardCharsets.UTF_8);
+        ViewString view = new ViewString(bytes);
+        assertEquals("\"32\u00b0C\\n\\\"x\\\"\"", encode(encoder -> encoder.writeString(view)));
     }
 }
