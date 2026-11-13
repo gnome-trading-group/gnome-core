@@ -39,6 +39,83 @@ class HostReadingsTest {
         Files.writeString(proc.resolve("stat"), String.format(STAT_HEAD, user, system, idle, steal));
     }
 
+    private static final String NET_DEV = "Inter-|   Receive                            |  Transmit\n"
+            + " face |bytes    packets errs drop fifo frame compressed multicast|bytes    packets errs drop fifo colls"
+            + " carrier compressed\n"
+            + "    lo:  5000      50    0    0    0     0          0         0     5000      50    0    0    0     0"
+            + "       0          0\n"
+            + "  ens5: 1000000  2000    0    3    0     0          0         0   400000    1500    0    1    0     0"
+            + "       0          0\n"
+            + "  ens6:   20000    40    0    0    0     0          0         0     1000      10    0    0    0     0"
+            + "       0          0\n";
+    private static final String SNMP = "Ip: Forwarding DefaultTTL\nIp: 1 64\n"
+            + "Tcp: RtoAlgorithm RtoMin RtoMax MaxConn ActiveOpens PassiveOpens AttemptFails EstabResets CurrEstab"
+            + " InSegs OutSegs RetransSegs InErrs OutRsts InCsumErrors\n"
+            + "Tcp: 1 200 120000 -1 300 20 5 7 12 900000 850000 42 0 9 0\n"
+            + "Udp: InDatagrams NoPorts InErrors OutDatagrams RcvbufErrors SndbufErrors InCsumErrors IgnoredMulti"
+            + " MemErrors\n"
+            + "Udp: 70000 3 120 64000 115 2 0 0 0\n"
+            + "UdpLite: InDatagrams NoPorts InErrors OutDatagrams RcvbufErrors SndbufErrors InCsumErrors\n"
+            + "UdpLite: 9 9 9 9 9 9 9\n";
+    private static final String IO = "rchar: 5000000\nwchar: 7000000\nsyscr: 100\nsyscw: 200\n"
+            + "read_bytes: 4096\nwrite_bytes: 81920\ncancelled_write_bytes: 0\n";
+
+    @Test
+    void networkTcpLoadIoAndContextSwitchesAreRead() throws IOException {
+        Files.createDirectories(proc.resolve("net"));
+        Files.writeString(proc.resolve("net").resolve("dev"), NET_DEV);
+        Files.writeString(proc.resolve("net").resolve("snmp"), SNMP);
+        Files.writeString(proc.resolve("loadavg"), "1.37 0.80 0.52 2/345 6789\n");
+        Files.writeString(proc.resolve("self").resolve("io"), IO);
+        try (HostReadings readings = new HostReadings(proc, proc.toFile())) {
+            readings.sample();
+
+            assertEquals(1_020_000, readings.netRxBytes(), "loopback left out");
+            assertEquals(2_040, readings.netRxPackets());
+            assertEquals(3, readings.netRxDrops());
+            assertEquals(401_000, readings.netTxBytes());
+            assertEquals(1_510, readings.netTxPackets());
+            assertEquals(1, readings.netTxDrops());
+            assertEquals(850_000, readings.tcpOutSegments());
+            assertEquals(42, readings.tcpRetransmits());
+            assertEquals(70_000, readings.udpInDatagrams());
+            assertEquals(64_000, readings.udpOutDatagrams());
+            assertEquals(120, readings.udpInErrors());
+            assertEquals(115, readings.udpRcvbufErrors());
+            assertEquals(2, readings.udpSndbufErrors());
+            assertEquals(137, readings.loadHundredths());
+            assertEquals(4_096, readings.ioReadBytes());
+            assertEquals(81_920, readings.ioWriteBytes());
+            assertEquals(987_654, readings.contextSwitches());
+        }
+    }
+
+    @Test
+    void readingsWithoutTheirFilesAreUnavailable() {
+        try (HostReadings readings = new HostReadings(proc, proc.toFile())) {
+            readings.sample();
+
+            assertEquals(HostReadings.UNAVAILABLE, readings.netRxBytes());
+            assertEquals(HostReadings.UNAVAILABLE, readings.tcpRetransmits());
+            assertEquals(HostReadings.UNAVAILABLE, readings.udpRcvbufErrors());
+            assertEquals(HostReadings.UNAVAILABLE, readings.loadHundredths());
+            assertEquals(HostReadings.UNAVAILABLE, readings.ioWriteBytes());
+        }
+    }
+
+    @Test
+    void contextSwitchesAreFoundPastALongInterruptLine() throws IOException {
+        StringBuilder intr = new StringBuilder("intr 1");
+        for (int i = 0; i < 6_000; i++) {
+            intr.append(' ').append(i);
+        }
+        Files.writeString(proc.resolve("stat"), "cpu  1 2 3 4 5 6 7 8 0 0\n" + intr + "\nctxt 555\n");
+        try (HostReadings readings = new HostReadings(proc, proc.toFile())) {
+            readings.sample();
+            assertEquals(555, readings.contextSwitches());
+        }
+    }
+
     @Test
     void memoryIsReadFromMeminfoAndTheProcessStatus() {
         try (HostReadings readings = new HostReadings(proc, proc.toFile())) {
