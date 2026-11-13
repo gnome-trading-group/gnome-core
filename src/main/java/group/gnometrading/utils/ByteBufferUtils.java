@@ -8,6 +8,7 @@ import static group.gnometrading.utils.AsciiEncoding.ZERO;
 import static group.gnometrading.utils.AsciiEncoding.digitCount;
 
 import group.gnometrading.strings.GnomeString;
+import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import org.agrona.BufferUtil;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -158,6 +159,7 @@ public final class ByteBufferUtils {
     }
 
     public static void putNaturalPaddedIntAscii(final ByteBuffer buffer, final int length, final int value) {
+        ensureRoom(buffer, length);
         final int offset = buffer.position();
         final int end = offset + length;
         int remainder = value;
@@ -170,6 +172,7 @@ public final class ByteBufferUtils {
     }
 
     public static void putNaturalPaddedLongAscii(final ByteBuffer buffer, final int length, final long value) {
+        ensureRoom(buffer, length);
         final int offset = buffer.position();
         final int end = offset + length;
         long remainder = value;
@@ -210,6 +213,7 @@ public final class ByteBufferUtils {
     }
 
     private static void putPositiveLongAscii(final ByteBuffer buffer, final long value, int digitCount) {
+        ensureRoom(buffer, digitCount);
         long quotient = value;
         int offset = buffer.position();
         int digitIdx = digitCount;
@@ -342,6 +346,7 @@ public final class ByteBufferUtils {
     }
 
     private static void putPositiveIntAscii(final ByteBuffer buffer, final int value, final int digits) {
+        ensureRoom(buffer, digits);
         int quotient = value;
         int offset = buffer.position();
         int digitIdx = digits;
@@ -377,6 +382,16 @@ public final class ByteBufferUtils {
         }
 
         buffer.position(offset + digits);
+    }
+
+    /**
+     * Digits are written by index, which past the limit throws IndexOutOfBoundsException; callers that grow their
+     * buffer on a full one expect the BufferOverflowException a relative put throws.
+     */
+    private static void ensureRoom(final ByteBuffer buffer, final int length) {
+        if (buffer.remaining() < length) {
+            throw new BufferOverflowException();
+        }
     }
 
     public static boolean isWhitespace(final byte value) {

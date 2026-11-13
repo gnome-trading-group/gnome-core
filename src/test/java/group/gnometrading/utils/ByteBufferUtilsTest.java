@@ -4,8 +4,10 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import group.gnometrading.strings.GnomeString;
 import group.gnometrading.strings.ViewString;
+import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
@@ -265,5 +267,38 @@ class ByteBufferUtilsTest {
         assertEquals(expectedDigits, digits);
         input.clear();
         assertEquals(result, String.valueOf(StandardCharsets.US_ASCII.decode(input)));
+    }
+
+    private static Stream<Arguments> numbersPastTheLimitArguments() {
+        return Stream.of(
+                Arguments.of("putIntAscii", (Consumer<ByteBuffer>) b -> ByteBufferUtils.putIntAscii(b, 12345)),
+                Arguments.of(
+                        "putIntAscii, negative", (Consumer<ByteBuffer>) b -> ByteBufferUtils.putIntAscii(b, -12345)),
+                Arguments.of(
+                        "putNaturalIntAscii", (Consumer<ByteBuffer>) b -> ByteBufferUtils.putNaturalIntAscii(b, 12345)),
+                Arguments.of("putLongAscii", (Consumer<ByteBuffer>)
+                        b -> ByteBufferUtils.putLongAscii(b, 1_794_593_058_231_677_433L)),
+                Arguments.of(
+                        "putDoubleAscii", (Consumer<ByteBuffer>) b -> ByteBufferUtils.putDoubleAscii(b, 12345.5, 2)),
+                Arguments.of("putNaturalPaddedIntAscii", (Consumer<ByteBuffer>)
+                        b -> ByteBufferUtils.putNaturalPaddedIntAscii(b, 5, 12)),
+                Arguments.of("putNaturalPaddedLongAscii", (Consumer<ByteBuffer>)
+                        b -> ByteBufferUtils.putNaturalPaddedLongAscii(b, 5, 12L)));
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("numbersPastTheLimitArguments")
+    void aNumberWithNoRoomLeftOverflowsLikeAnyOtherPut(String name, Consumer<ByteBuffer> put) {
+        ByteBuffer buffer = ByteBuffer.allocate(8);
+        buffer.position(4);
+        assertThrows(BufferOverflowException.class, () -> put.accept(buffer));
+    }
+
+    @Test
+    void aNumberThatJustFitsIsWritten() {
+        ByteBuffer buffer = ByteBuffer.allocate(8);
+        buffer.position(3);
+        assertEquals(5, ByteBufferUtils.putLongAscii(buffer, 12345L));
+        assertEquals(8, buffer.position());
     }
 }

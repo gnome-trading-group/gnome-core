@@ -3,6 +3,7 @@ package group.gnometrading.codecs.json;
 import static org.junit.jupiter.api.Assertions.*;
 
 import group.gnometrading.strings.ViewString;
+import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.function.Consumer;
@@ -142,5 +143,13 @@ class JsonEncoderTest {
         byte[] bytes = "32\u00b0C\n\"x\"".getBytes(StandardCharsets.UTF_8);
         ViewString view = new ViewString(bytes);
         assertEquals("\"32\u00b0C\\n\\\"x\\\"\"", encode(encoder -> encoder.writeString(view)));
+    }
+
+    @Test
+    void aFullBufferOverflowsOnANumberAsOnAnyOtherValue() {
+        JsonEncoder encoder = new JsonEncoder();
+        encoder.wrap(ByteBuffer.allocate(12));
+        encoder.writeObjectStart();
+        assertThrows(BufferOverflowException.class, () -> encoder.writeObjectEntry("at", 1_794_593_058_231_677_433L));
     }
 }
