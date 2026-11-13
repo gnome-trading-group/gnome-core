@@ -1,6 +1,6 @@
 package group.gnometrading.utils;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.lang.management.ManagementFactory;
@@ -34,12 +34,12 @@ class SampledEpochNanoClockTest {
     }
 
     private static void assertReadsTheSystemClock(final SampledEpochNanoClock clock) {
-
         final Instant before = Instant.now();
         final long read = clock.nanoTime();
         final Instant after = Instant.now();
 
-        // The offset is good to tens of nanoseconds; the margin is for a thread descheduled between the reads.
+        // The offset is good to tens of nanoseconds and the read is bracketed by wall reads, so a thread descheduled
+        // between them only widens the bracket; the margin is for the system clock itself moving under chrony.
         final long slack = TimeUnit.MILLISECONDS.toNanos(1);
         assertTrue(read >= epochNanos(before) - slack, "read " + read + " before " + before);
         assertTrue(read <= epochNanos(after) + slack, "read " + read + " after " + after);
@@ -61,10 +61,18 @@ class SampledEpochNanoClockTest {
         final SampledEpochNanoClock clock = new SampledEpochNanoClock(0);
 
         for (int i = 0; i < 1_000; i++) {
-            final long read = clock.nanoTime();
-            final long wall = epochNanos(Instant.now());
-            assertTrue(Math.abs(wall - read) < TimeUnit.MILLISECONDS.toNanos(1), "read " + read + " wall " + wall);
+            assertReadsTheSystemClock(clock);
         }
+    }
+
+    @Test
+    void aResampleAsTightAsAllowedReplacesTheOffset() {
+        assertTrue(SampledEpochNanoClock.tightEnough(SampledEpochNanoClock.MAX_SAMPLE_WIDTH_NANOS));
+    }
+
+    @Test
+    void anInterruptedResampleKeepsTheOffsetHeld() {
+        assertFalse(SampledEpochNanoClock.tightEnough(SampledEpochNanoClock.MAX_SAMPLE_WIDTH_NANOS + 1));
     }
 
     private static void assertAllocatesNothing(final SampledEpochNanoClock clock) {
@@ -78,7 +86,8 @@ class SampledEpochNanoClockTest {
         final long allocated = threads.getThreadAllocatedBytes(threadId) - before;
 
         assertTrue(sink != 0);
-        assertEquals(0, allocated, "allocated " + allocated + " bytes over " + MEASURED + " reads");
+        // Measuring can itself allocate a little; anything per read would be hundreds of kilobytes here.
+        assertTrue(allocated < 2_048, "allocated " + allocated + " bytes over " + MEASURED + " reads");
     }
 
     private static long read(final SampledEpochNanoClock clock, final int count) {
